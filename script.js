@@ -3,10 +3,10 @@
   const tel = "tel:+36206671832";
   const storageKey = "sps-lang";
   const supportedLanguages = [
+    { code: "de", label: "Deutsch", short: "DE", html: "de", flag: "de", complete: "Vollständige Website" },
     { code: "hu", label: "Magyar", short: "HU", html: "hu", flag: "hu", complete: "Teljes weboldal" },
-    { code: "en", label: "English", short: "EN", html: "en", flag: "en", complete: "Complete website" },
   ];
-  const fallbackLanguage = "en";
+  const fallbackLanguage = "de";
   const languageCodes = new Set(supportedLanguages.map((language) => language.code));
   const assetBuildId = "slider-hitfix-v1-2026-08-08-01";
   const paintDebugBuild = assetBuildId;
@@ -17,15 +17,15 @@
     /* Analytics is optional and must never block site interactions. */
   }
   const routePairs = {
-    home: { en: "/", hu: "/hu/" },
-    maintenance: { en: "/property-maintenance-sopron.html", hu: "/hu/ingatlan-karbantartas-sopron.html" },
-    painting: { en: "/painting-wall-repairs-sopron.html", hu: "/hu/szobafestes-faljavitas-sopron.html" },
-    garden: { en: "/garden-maintenance-sopron.html", hu: "/hu/kertfenntartas-sopron.html" },
-    handyman: { en: "/handyman-services-sopron.html", hu: "/hu/ezermester-sopron.html" },
-    cleaning: { en: "/cleaning-services-sopron.html", hu: "/hu/takaritas-sopron.html" },
-    airbnb: { en: "/airbnb-property-maintenance-sopron.html", hu: "/hu/airbnb-karbantartas-sopron.html" },
+    home: { de: "/", hu: "/hu/" },
+    maintenance: { de: "/property-maintenance-sopron.html", hu: "/hu/ingatlan-karbantartas-sopron.html" },
+    painting: { de: "/painting-wall-repairs-sopron.html", hu: "/hu/szobafestes-faljavitas-sopron.html" },
+    garden: { de: "/garden-maintenance-sopron.html", hu: "/hu/kertfenntartas-sopron.html" },
+    handyman: { de: "/handyman-services-sopron.html", hu: "/hu/ezermester-sopron.html" },
+    cleaning: { de: "/cleaning-services-sopron.html", hu: "/hu/takaritas-sopron.html" },
+    airbnb: { de: "/airbnb-property-maintenance-sopron.html", hu: "/hu/airbnb-karbantartas-sopron.html" },
     foreignOwners: {
-      en: "/property-management-for-foreign-owners-sopron.html",
+      de: "/property-management-for-foreign-owners-sopron.html",
       hu: "/hu/ingatlankezeles-kulfoldi-tulajdonosoknak-sopron.html",
     },
   };
@@ -33,7 +33,7 @@
   Object.entries(routePairs).forEach(([key, pair]) => {
     Object.entries(pair).forEach(([lang, href]) => routeLookup.set(href, { key, lang }));
   });
-  routeLookup.set("/index.html", { key: "home", lang: "en" });
+  routeLookup.set("/index.html", { key: "home", lang: "de" });
   routeLookup.set("/hu/index.html", { key: "home", lang: "hu" });
 
   const paintDebugError = (error) => ({
@@ -599,12 +599,12 @@
       "zh-CN": "语言",
     },
     languageBadge: {
-      hu: "Elérhető magyarul és angolul",
-      en: "Available in Hungarian and English",
+      hu: "Elérhető magyarul és németül",
+      de: "Verfügbar auf Deutsch und Ungarisch",
     },
     languageSelectorHint: {
-      hu: "HU / EN",
-      en: "HU / EN",
+      hu: "HU / DE",
+      de: "HU / DE",
     },
     openLanguageMenu: {
       hu: "Nyelv kiválasztása",
@@ -820,8 +820,8 @@
     ["Organised workflow", "Strukturierter Ablauf", "Організований процес", "有序流程"],
     ["Sopron focus", "Fokus auf Sopron", "Фокус на Шопроні", "专注肖普朗"],
     ["Photo updates", "Foto-Updates", "Фотооновлення", "照片更新"],
-    ["Hungarian and English communication", "Kommunikation auf Ungarisch und Englisch", "Комунікація угорською та англійською", "匈牙利语和英语沟通"],
-    ["Hungarian and English coordination", "Abstimmung auf Ungarisch und Englisch", "Координація угорською та англійською", "匈牙利语和英语协调"],
+    ["Hungarian and English communication", "Kommunikation auf Ungarisch und Deutsch", "Комунікація угорською та англійською", "匈牙利语和英语沟通"],
+    ["Hungarian and English coordination", "Abstimmung auf Ungarisch und Deutsch", "Координація угорською та англійською", "匈牙利语和英语协调"],
     ["Property maintenance in Sopron", "Immobilieninstandhaltung in Sopron", "Обслуговування нерухомості в Шопроні", "肖普朗物业维护"],
     ["Handyman services in Sopron", "Hausmeister- und Reparaturservice in Sopron", "Послуги майстра в Шопроні", "肖普朗维修服务"],
     ["Painting and wall repairs in Sopron", "Malerarbeiten und Wandreparaturen in Sopron", "Фарбування та ремонт стін у Шопроні", "肖普朗粉刷与墙面维修"],
@@ -830,7 +830,7 @@
     ["Property services in Sopron", "Immobiliendienstleistungen in Sopron", "Послуги для нерухомості в Шопроні", "肖普朗物业服务"],
     ["Professional Property Maintenance in Sopron", "Professionelle Immobilieninstandhaltung in Sopron", "Професійне обслуговування нерухомості в Шопроні", "肖普朗专业物业维护"],
     ["Fast, reliable maintenance, repairs and property management for homeowners, landlords, Airbnb hosts and international property owners.", "Schnelle, zuverlässige Instandhaltung, Reparaturen und Immobilienbetreuung für Hauseigentümer, Vermieter, Airbnb-Gastgeber und internationale Immobilieneigentümer.", "Швидке й надійне обслуговування, ремонт і підтримка управління нерухомістю для власників житла, орендодавців, Airbnb-господарів та міжнародних власників нерухомості.", "为房主、房东、Airbnb 房东和国际业主提供快速、可靠的维护、维修和物业管理支持。"],
-    ["English-speaking service", "Englischsprachiger Service", "Обслуговування англійською мовою", "英语服务"],
+    ["English-speaking service", "Deutschsprachiger Service", "Обслуговування англійською мовою", "英语服务"],
     ["Photo updates during every job", "Foto-Updates während jedes Auftrags", "Фотооновлення під час кожної роботи", "每项工作期间提供照片更新"],
     ["Fast response via WhatsApp", "Schnelle Antwort per WhatsApp", "Швидка відповідь через WhatsApp", "通过 WhatsApp 快速回复"],
     ["Get a Free Quote", "Kostenloses Angebot anfordern", "Отримати безкоштовну пропозицію", "获取免费报价"],
@@ -855,7 +855,7 @@
     ["Deadline", "Frist", "Термін", "截止时间"],
     ["Access", "Zugang", "Доступ", "进入方式"],
     ["Timing", "Zeitplanung", "Часові рамки", "时间安排"],
-    ["Primary service area: Sopron and nearby locations. Hungarian and English communication.", "Hauptgebiet: Sopron und nahe Umgebung. Kommunikation auf Ungarisch und Englisch.", "Основна зона обслуговування: Шопрон і найближчі території. Комунікація угорською та англійською.", "主要服务区域：肖普朗及周边地区。可用匈牙利语和英语沟通。"],
+    ["Primary service area: Sopron and nearby locations. Hungarian and English communication.", "Hauptgebiet: Sopron und nahe Umgebung. Kommunikation auf Ungarisch und Deutsch.", "Основна зона обслуговування: Шопрон і найближчі території. Комунікація угорською та англійською.", "主要服务区域：肖普朗及周边地区。可用匈牙利语和英语沟通。"],
     ["A short message is enough: photos, location and timing. Primary service area: Sopron and nearby locations.", "Eine kurze Nachricht genügt: Fotos, Standort und Zeitrahmen. Hauptgebiet: Sopron und Umgebung.", "Достатньо короткого повідомлення: фото, місце та терміни. Основна зона: Шопрон і околиці.", "简短信息即可：照片、位置和时间。主要服务区域为肖普朗及周边。"],
     ["Send a few photos and let’s clarify the next practical step.", "Senden Sie ein paar Fotos, dann klären wir den nächsten sinnvollen Schritt.", "Надішліть кілька фото, і ми уточнимо наступний практичний крок.", "发送几张照片，我们会明确下一步实际可行的方案。"],
     ["Send a few photos of the property and let us clarify the right cleaning scope.", "Senden Sie ein paar Fotos der Immobilie, damit wir den passenden Reinigungsumfang klären können.", "Надішліть кілька фото нерухомості, і ми уточнимо потрібний обсяг прибирання.", "发送几张物业照片，我们会明确合适的清洁范围。"],
@@ -926,7 +926,7 @@
     ["Painting and wall repair FAQ", "FAQ zu Malerarbeiten und Wandreparaturen", "Поширені запитання про фарбування та ремонт стін", "粉刷与墙面维修常见问题"],
     ["Garden maintenance FAQ", "FAQ zur Gartenpflege", "Поширені запитання про догляд за садом", "园艺维护常见问题"],
     ["Do you work with owners living abroad?", "Arbeiten Sie mit Eigentümern im Ausland?", "Чи працюєте ви з власниками, які живуть за кордоном?", "你们为居住在国外的业主服务吗？"],
-    ["Is English communication available?", "Ist Kommunikation auf Englisch möglich?", "Чи доступна комунікація англійською?", "可以用英语沟通吗？"],
+    ["Is English communication available?", "Ist Kommunikation auf Deutsch möglich?", "Чи доступна комунікація англійською?", "可以用英语沟通吗？"],
     ["Do you send photos of the work?", "Senden Sie Fotos der Arbeiten?", "Чи надсилаєте ви фото виконаних робіт?", "你们会发送工作照片吗？"],
     ["How do I request a quote?", "Wie kann ich ein Angebot anfragen?", "Як запросити пропозицію?", "如何询价？"],
     ["Do you handle urgent work?", "Übernehmen Sie dringende Arbeiten?", "Чи виконуєте ви термінові роботи?", "可以处理紧急工作吗？"],
@@ -941,12 +941,12 @@
 
   const supplementalPhraseTranslations =   {
       "Painting, wall and drywall repair, small maintenance jobs and garden care for foreign owners, Airbnb hosts, property managers, offices and representative properties. Hungarian and English communication, photo updates and an organised workflow in Sopron.": {
-          "de": "Malerarbeiten, Wand- und Trockenbaureparaturen, kleinere Instandhaltungsarbeiten und Gartenpflege für ausländische Eigentümer, Airbnb-Gastgeber, Immobilienverwalter, Büros und repräsentative Immobilien. Ungarische und englische Kommunikation, Foto-Updates und ein organisierter Ablauf in Sopron.",
+          "de": "Malerarbeiten, Wand- und Trockenbaureparaturen, kleinere Instandhaltungsarbeiten und Gartenpflege für ausländische Eigentümer, Airbnb-Gastgeber, Immobilienverwalter, Büros und repräsentative Immobilien. Ungarische und deutsche Kommunikation, Foto-Updates und ein organisierter Ablauf in Sopron.",
           "uk": "Фарбування, ремонт стін і гіпсокартону, дрібні роботи з обслуговування та догляд за садом для іноземних власників, Airbnb-господарів, керуючих нерухомістю, офісів і представницьких об'єктів. Комунікація угорською й англійською, фотозвіти та організований робочий процес у Шопроні.",
           "zh-CN": "为外国业主、Airbnb 房东、物业管理者、办公室和代表性物业提供粉刷、墙面和石膏板维修、小型维护以及庭院养护。支持匈牙利语和英语沟通、照片更新，并在肖普朗以有序流程推进。"
       },
       "A reliable maintenance partner for owners living abroad, apartment investors, Airbnb hosts, offices and representative properties in Sopron. Minor repairs, painting, drywall work, garden care, photo updates and Hungarian-English coordination, handled through a clear workflow.": {
-          "de": "Ein verlässlicher Wartungspartner für Eigentümer im Ausland, Wohnungsinvestoren, Airbnb-Gastgeber, Büros und repräsentative Immobilien in Sopron. Kleinere Reparaturen, Malerarbeiten, Trockenbau, Gartenpflege, Fotoberichte und ungarisch-englische Abstimmung in einem klaren Ablauf.",
+          "de": "Ein verlässlicher Wartungspartner für Eigentümer im Ausland, Wohnungsinvestoren, Airbnb-Gastgeber, Büros und repräsentative Immobilien in Sopron. Kleinere Reparaturen, Malerarbeiten, Trockenbau, Gartenpflege, Fotoberichte und ungarisch-deutsche Abstimmung in einem klaren Ablauf.",
           "uk": "Надійний партнер з обслуговування для власників за кордоном, інвесторів у квартири, Airbnb-господарів, офісів і представницьких об'єктів у Шопроні. Дрібні ремонти, фарбування, гіпсокартон, догляд за садом, фотозвіти та узгодження угорською й англійською в прозорому процесі.",
           "zh-CN": "为海外业主、公寓投资者、Airbnb 房东、办公室和肖普朗代表性物业提供可靠的维护支持。小型维修、粉刷、石膏板、庭院养护、照片更新，以及清晰流程中的匈牙利语和英语沟通。"
       },
@@ -956,7 +956,7 @@
           "zh-CN": "肖普朗公寓清洁、物业清洁、Airbnb 清洁、深度清洁、办公室清洁和退租清洁，适合需要清晰沟通、照片更新和可靠使用前准备的业主、房东和管理者。"
       },
       "Cleaning, property maintenance, painting, small repairs and garden care in Sopron, with Hungarian and English coordination.": {
-          "de": "Reinigung, Immobilieninstandhaltung, Malerarbeiten, kleinere Reparaturen und Gartenpflege in Sopron, mit ungarischer und englischer Abstimmung.",
+          "de": "Reinigung, Immobilieninstandhaltung, Malerarbeiten, kleinere Reparaturen und Gartenpflege in Sopron, mit ungarischer und deutscher Abstimmung.",
           "uk": "Прибирання, обслуговування нерухомості, фарбування, дрібні ремонти та догляд за садом у Шопроні з узгодженням угорською й англійською.",
           "zh-CN": "肖普朗清洁、物业维护、粉刷、小型维修和园艺养护，支持匈牙利语和英语沟通。"
       },
@@ -966,22 +966,22 @@
           "zh-CN": "这类维修并不是大型翻新，而是处理让公寓显得未完成、Airbnb 房源不够待客、办公室不够专业的实际问题。"
       },
       "Handyman-style small repairs, fittings, wall repairs and property maintenance in Sopron, with Hungarian and English coordination.": {
-          "de": "Kleinere Reparaturen, Montagen, Wandreparaturen und Immobilieninstandhaltung in Sopron, mit ungarischer und englischer Abstimmung.",
+          "de": "Kleinere Reparaturen, Montagen, Wandreparaturen und Immobilieninstandhaltung in Sopron, mit ungarischer und deutscher Abstimmung.",
           "uk": "Дрібні ремонти, монтажні роботи, ремонт стін і обслуговування нерухомості в Шопроні з узгодженням угорською й англійською.",
           "zh-CN": "肖普朗小型维修、安装、墙面修补和物业维护，支持匈牙利语和英语沟通。"
       },
       "Interior painting, crack repair, plastering, minor drywall and surface repairs for Sopron apartments, Airbnb homes, offices and properties being prepared for rental or sale. Hungarian and English coordination, photo updates and organised scheduling.": {
-          "de": "Innenanstrich, Rissreparatur, Spachtelarbeiten sowie kleinere Trockenbau- und Oberflächenreparaturen für Soproner Wohnungen, Airbnb-Unterkünfte, Büros und Immobilien vor Vermietung oder Verkauf. Ungarische und englische Abstimmung, Foto-Updates und organisierte Terminplanung.",
+          "de": "Innenanstrich, Rissreparatur, Spachtelarbeiten sowie kleinere Trockenbau- und Oberflächenreparaturen für Soproner Wohnungen, Airbnb-Unterkünfte, Büros und Immobilien vor Vermietung oder Verkauf. Ungarische und deutsche Abstimmung, Foto-Updates und organisierte Terminplanung.",
           "uk": "Інтер'єрне фарбування, ремонт тріщин, шпаклювання, дрібний ремонт гіпсокартону та поверхонь для будапештських квартир, Airbnb-житла, офісів і об'єктів перед орендою або продажем. Узгодження угорською й англійською, фотозвіти та організований графік.",
           "zh-CN": "为肖普朗公寓、Airbnb 房源、办公室以及准备出租或出售的物业提供室内粉刷、裂缝修补、抹灰、小型石膏板和表面修复。支持匈牙利语和英语沟通、照片更新和有序排期。"
       },
       "Lawn mowing, hedge trimming, weed removal, seasonal cleanup and practical outdoor maintenance for homes, apartment gardens, Airbnb properties, offices and Sopron properties owned from abroad. Hungarian and English coordination, photo updates and clear scheduling.": {
-          "de": "Rasenmähen, Heckenschnitt, Unkrautentfernung, saisonale Aufräumarbeiten und praktische Außenpflege für Häuser, Wohnungsgärten, Airbnb-Objekte, Büros und Soproner Immobilien von Eigentümern im Ausland. Ungarische und englische Abstimmung, Foto-Updates und klare Terminplanung.",
+          "de": "Rasenmähen, Heckenschnitt, Unkrautentfernung, saisonale Aufräumarbeiten und praktische Außenpflege für Häuser, Wohnungsgärten, Airbnb-Objekte, Büros und Soproner Immobilien von Eigentümern im Ausland. Ungarische und deutsche Abstimmung, Foto-Updates und klare Terminplanung.",
           "uk": "Косіння газону, підрізання живоплоту, видалення бур'янів, сезонне прибирання та практичний догляд за зовнішніми зонами для будинків, квартирних садів, Airbnb-об'єктів, офісів і будапештської нерухомості власників за кордоном. Узгодження угорською й англійською, фотозвіти та чітке планування.",
           "zh-CN": "为住宅、公寓花园、Airbnb 物业、办公室以及海外业主在肖普朗的物业提供割草、修剪绿篱、除草、季节性清理和实用户外维护。支持匈牙利语和英语沟通、照片更新和清晰排期。"
       },
       "Organised support for apartments, Airbnb properties, offices and owners living abroad. Shelves, curtain rails, small fittings, furniture assembly, door and lock-area fixes, wall marks and practical pre-handover maintenance, coordinated in Hungarian and English.": {
-          "de": "Organisierte Unterstützung für Wohnungen, Airbnb-Objekte, Büros und Eigentümer im Ausland. Regale, Gardinenschienen, kleinere Befestigungen, Möbelmontage, Tür- und Schlossbereich, Wandspuren und praktische Instandhaltung vor der Übergabe, koordiniert auf Ungarisch und Englisch.",
+          "de": "Organisierte Unterstützung für Wohnungen, Airbnb-Objekte, Büros und Eigentümer im Ausland. Regale, Gardinenschienen, kleinere Befestigungen, Möbelmontage, Tür- und Schlossbereich, Wandspuren und praktische Instandhaltung vor der Übergabe, koordiniert auf Ungarisch und Deutsch.",
           "uk": "Організована підтримка для квартир, Airbnb-об'єктів, офісів і власників за кордоном. Полиці, карнизи, дрібні кріплення, складання меблів, ремонт біля дверей і замків, сліди на стінах та практичне обслуговування перед передачею з координацією угорською й англійською.",
           "zh-CN": "为公寓、Airbnb 物业、办公室和海外业主提供有序支持。包括搁板、窗帘杆、小型固定件、家具组装、门和锁周边修理、墙面痕迹以及交接前的实用维护，支持匈牙利语和英语沟通。"
       },
@@ -3410,49 +3410,49 @@
       key: "maintenance",
       href: "property-maintenance-sopron.html",
       hu: "Karbantartás",
-      en: "Maintenance",
+      de: "Instandhaltung",
       dataset: "maintenanceLink",
     },
     {
       key: "painting",
       href: "painting-wall-repairs-sopron.html",
       hu: "Festés és faljavítás",
-      en: "Painting & Wall Repairs",
+      de: "Malerarbeiten & Wandreparaturen",
       dataset: "paintingLink",
     },
     {
       key: "garden",
       href: "garden-maintenance-sopron.html",
       hu: "Kertfenntartás",
-      en: "Garden Maintenance",
+      de: "Gartenpflege",
       dataset: "gardenLink",
     },
     {
       key: "handyman",
       href: "handyman-services-sopron.html",
       hu: "Ezermester",
-      en: "Handyman",
+      de: "Hausmeisterservice",
       dataset: "handymanLink",
     },
     {
       key: "cleaning",
       href: "cleaning-services-sopron.html",
       hu: "Takarítás",
-      en: "Cleaning",
+      de: "Reinigung",
       dataset: "cleaningLink",
     },
     {
       key: "airbnb",
       href: "airbnb-property-maintenance-sopron.html",
       hu: "Airbnb karbantartás",
-      en: "Airbnb Maintenance",
+      de: "Airbnb-Betreuung",
       dataset: "airbnbLink",
     },
     {
       key: "foreignOwners",
       href: "property-management-for-foreign-owners-sopron.html",
       hu: "Külföldi tulajdonosok",
-      en: "Owner Support",
+      de: "Eigentümer-Service",
       dataset: "foreignOwnersLink",
     },
   ];
@@ -3498,22 +3498,22 @@
   const routeInfoForPath = (pathname = window.location.pathname) => routeLookup.get(normalizePath(pathname)) || null;
   const routeLanguage = () => {
     const pageLang = normalizeLanguage(document.documentElement.dataset.pageLanguage || document.body?.dataset.routeLang || "");
-    if (pageLang === "en" || pageLang === "hu") return pageLang;
+    if (pageLang === "de" || pageLang === "hu") return pageLang;
     const routeLang = routeInfoForPath()?.lang;
-    if (routeLang === "en" || routeLang === "hu") return routeLang;
+    if (routeLang === "de" || routeLang === "hu") return routeLang;
     const htmlLang = normalizeLanguage(document.documentElement.lang);
-    return htmlLang === "en" || htmlLang === "hu" ? htmlLang : "";
+    return htmlLang === "de" || htmlLang === "hu" ? htmlLang : "";
   };
   const currentRouteKey = () => routeInfoForPath()?.key || "home";
   const routeHref = (key, lang = currentLang()) => {
-    const routeLang = lang === "hu" ? "hu" : "en";
+    const routeLang = lang === "hu" ? "hu" : "de";
     const path = routePairs[key]?.[routeLang] || routePairs.home[routeLang];
     const basePath = window.location.pathname.startsWith("/sopron-property-services/")
       ? "/sopron-property-services"
       : "";
     return `${basePath}${path}`;
   };
-  const navigationLanguage = () => (currentLang() === "hu" ? "hu" : routeLanguage() === "hu" ? "hu" : "en");
+  const navigationLanguage = () => (currentLang() === "hu" ? "hu" : routeLanguage() === "hu" ? "hu" : "de");
   let activeLanguage = routeLanguage() || storedLanguage() || browserLanguage() || fallbackLanguage;
   if (!storedLanguage()) persistLanguage(activeLanguage);
 
@@ -3524,7 +3524,7 @@
     supportedLanguages.find((language) => language.code === lang) || supportedLanguages.find((language) => language.code === fallbackLanguage);
   const t = (key, lang = currentLang()) => uiText[key]?.[lang] || uiText[key]?.[fallbackLanguage] || "";
   const translatePhrase = (text, lang = currentLang()) => {
-    if (!text || lang === "hu" || lang === "en") return text;
+    if (!text || lang === "hu" || lang === "de") return text;
     return phraseTranslations[text]?.[lang] || text;
   };
   const translateInlineText = (value, lang = currentLang()) => {
@@ -3540,45 +3540,45 @@
     directCallViewport() ? t("callNow", lang) : t("copyPhone", lang);
 
   const quoteFormText = {
-    en: {
-      kicker: "Request a quote",
-      title: "Send structured details on WhatsApp",
-      intro: "Fill in the essentials and WhatsApp will open with a ready-to-send message. Add your photos there before sending.",
+    de: {
+      kicker: "Angebot anfragen",
+      title: "Strukturierte Angaben per WhatsApp senden",
+      intro: "Füllen Sie die wichtigsten Angaben aus – WhatsApp öffnet sich mit einer versandfertigen Nachricht. Fügen Sie Ihre Fotos dort vor dem Senden hinzu.",
       name: "Name",
-      service: "Service type",
-      location: "location or area (optional)",
-      description: "Short task description",
-      timing: "Preferred timing",
-      access: "Access information",
-      propertyType: "Property type",
-      photosReady: "I have photos ready and will attach them in WhatsApp.",
-      consent: "I understand that WhatsApp will open with these details and that photos must be attached manually before sending.",
-      submit: "Continue in WhatsApp",
-      note: "WhatsApp will open with the details below. Add your photos there before sending.",
-      required: "Required",
-      requiredError: "Please complete this field.",
-      consentError: "Please confirm before continuing to WhatsApp.",
-      statusOpening: "WhatsApp is opening. Attach your photos before sending the message.",
+      service: "Art der Leistung",
+      location: "Ort oder Gegend (optional)",
+      description: "Kurze Aufgabenbeschreibung",
+      timing: "Gewünschter Zeitpunkt",
+      access: "Zugangsinformationen",
+      propertyType: "Immobilientyp",
+      photosReady: "Ich habe Fotos bereit und hänge sie in WhatsApp an.",
+      consent: "Mir ist bewusst, dass sich WhatsApp mit diesen Angaben öffnet und Fotos vor dem Senden manuell angehängt werden müssen.",
+      submit: "Weiter zu WhatsApp",
+      note: "WhatsApp öffnet sich mit den folgenden Angaben. Fügen Sie Ihre Fotos dort vor dem Senden hinzu.",
+      required: "Erforderlich",
+      requiredError: "Bitte füllen Sie dieses Feld aus.",
+      consentError: "Bitte bestätigen Sie, bevor Sie zu WhatsApp weitergehen.",
+      statusOpening: "WhatsApp wird geöffnet. Fügen Sie Ihre Fotos an, bevor Sie die Nachricht senden.",
       counter: (count, max) => `${count} / ${max}`,
-      messageGreeting: "Hello! I would like to request a quote from Sopron Property Services.",
+      messageGreeting: "Hallo! Ich möchte gerne ein Angebot von Sopron Property Services anfragen.",
       messageLabels: {
         name: "Name",
-        service: "Service",
-        propertyType: "Property type",
-        location: "Location / area",
-        timing: "Preferred timing",
-        access: "Access information",
-        description: "Task description",
-        photos: "Photos",
-        page: "Page",
+        service: "Leistung",
+        propertyType: "Immobilientyp",
+        location: "Ort / Gegend",
+        timing: "Gewünschter Zeitpunkt",
+        access: "Zugangsinformationen",
+        description: "Aufgabenbeschreibung",
+        photos: "Fotos",
+        page: "Seite",
       },
-      photosYes: "Photos are ready and will be attached in WhatsApp.",
-      photosNo: "No photos yet / I will explain in WhatsApp.",
-      placeholderName: "Your name",
-      placeholderLocation: "Example: Belváros (Old Town), Lővérek, city centre - or leave blank",
-      locationHelp: "An exact address is not needed for the first message.",
-      placeholderAccess: "Optional: keys, concierge, tenant contact or access window",
-      placeholderDescription: "Briefly describe what needs to be checked, repaired, cleaned or prepared.",
+      photosYes: "Fotos sind bereit und werden in WhatsApp angehängt.",
+      photosNo: "Noch keine Fotos / Ich erkläre es in WhatsApp.",
+      placeholderName: "Ihr Name",
+      placeholderLocation: "Beispiel: Belváros (Altstadt), Lővérek, Stadtzentrum – oder leer lassen",
+      locationHelp: "Für die erste Nachricht ist keine genaue Adresse nötig.",
+      placeholderAccess: "Optional: Schlüssel, Hausverwaltung, Mieterkontakt oder Zugangszeitfenster",
+      placeholderDescription: "Beschreiben Sie kurz, was geprüft, repariert, gereinigt oder vorbereitet werden soll.",
     },
     hu: {
       kicker: "Ajánlatkérés",
@@ -3622,30 +3622,30 @@
     },
   };
   const quoteServiceOptions = [
-    { value: "maintenance", en: "Property maintenance", hu: "Ingatlankarbantartás" },
-    { value: "handyman", en: "Handyman / small repairs", hu: "Ezermester / kisebb javítások" },
-    { value: "painting", en: "Painting and wall repairs", hu: "Szobafestés és faljavítás" },
-    { value: "garden", en: "Garden maintenance", hu: "Kertfenntartás" },
-    { value: "cleaning", en: "Cleaning", hu: "Takarítás" },
-    { value: "airbnb", en: "Airbnb maintenance", hu: "Airbnb-karbantartás" },
-    { value: "foreign_owner", en: "Property support for a foreign owner", hu: "Ingatlankezelési segítség külföldi tulajdonosnak" },
-    { value: "other", en: "Other", hu: "Egyéb" },
+    { value: "maintenance", de: "Immobilienpflege", hu: "Ingatlankarbantartás" },
+    { value: "handyman", de: "Hausmeisterservice / Kleinreparaturen", hu: "Ezermester / kisebb javítások" },
+    { value: "painting", de: "Malerarbeiten und Wandreparaturen", hu: "Szobafestés és faljavítás" },
+    { value: "garden", de: "Gartenpflege", hu: "Kertfenntartás" },
+    { value: "cleaning", de: "Reinigung", hu: "Takarítás" },
+    { value: "airbnb", de: "Airbnb-Betreuung", hu: "Airbnb-karbantartás" },
+    { value: "foreign_owner", de: "Betreuung für ausländische Eigentümer", hu: "Ingatlankezelési segítség külföldi tulajdonosnak" },
+    { value: "other", de: "Sonstiges", hu: "Egyéb" },
   ];
   const quotePropertyOptions = [
-    { value: "", en: "Select if relevant", hu: "Válasszon, ha releváns" },
-    { value: "apartment", en: "Apartment", hu: "Lakás" },
-    { value: "house", en: "House", hu: "Ház" },
-    { value: "airbnb_rental", en: "Airbnb / rental", hu: "Airbnb / kiadó ingatlan" },
-    { value: "office", en: "Office", hu: "Iroda" },
-    { value: "representative_property", en: "Representative property", hu: "Képviseleti ingatlan" },
-    { value: "garden_outdoor", en: "Garden / outdoor area", hu: "Kert / kültéri terület" },
-    { value: "other", en: "Other", hu: "Egyéb" },
+    { value: "", de: "Falls zutreffend auswählen", hu: "Válasszon, ha releváns" },
+    { value: "apartment", de: "Wohnung", hu: "Lakás" },
+    { value: "house", de: "Haus", hu: "Ház" },
+    { value: "airbnb_rental", de: "Airbnb / Mietobjekt", hu: "Airbnb / kiadó ingatlan" },
+    { value: "office", de: "Büro", hu: "Iroda" },
+    { value: "representative_property", de: "Repräsentative Immobilie", hu: "Képviseleti ingatlan" },
+    { value: "garden_outdoor", de: "Garten / Außenbereich", hu: "Kert / kültéri terület" },
+    { value: "other", de: "Sonstiges", hu: "Egyéb" },
   ];
   const quoteTimingOptions = [
-    { value: "asap", en: "As soon as possible", hu: "Amint lehetséges" },
-    { value: "week", en: "Within one week", hu: "Egy héten belül" },
-    { value: "month", en: "Within one month", hu: "Egy hónapon belül" },
-    { value: "flexible", en: "Flexible / just requesting information", hu: "Rugalmas / egyelőre érdeklődöm" },
+    { value: "asap", de: "So schnell wie möglich", hu: "Amint lehetséges" },
+    { value: "week", de: "Innerhalb einer Woche", hu: "Egy héten belül" },
+    { value: "month", de: "Innerhalb eines Monats", hu: "Egy hónapon belül" },
+    { value: "flexible", de: "Flexibel / nur Informationsanfrage", hu: "Rugalmas / egyelőre érdeklődöm" },
   ];
   const quoteRouteService = {
     home: "maintenance",
@@ -3901,7 +3901,7 @@
       const overview = overviewLink || document.createElement("a");
       overview.href = overviewHref;
       overview.dataset.textHu = uiText.servicesOverview.hu;
-      overview.dataset.textEn = uiText.servicesOverview.en;
+      overview.dataset.textDe = uiText.servicesOverview.de;
       overview.textContent = t("servicesOverview", lang);
       overview.setAttribute("role", "menuitem");
       overview.removeAttribute("aria-current");
@@ -3916,9 +3916,9 @@
         link.href = routeHref(item.key, navigationLanguage());
         link.dataset.serviceNavItem = item.key;
         link.dataset.textHu = item.hu;
-        link.dataset.textEn = item.en;
+        link.dataset.textDe = item.de;
         link.dataset[item.dataset] = "true";
-        link.textContent = lang === "hu" ? item.hu : lang === "en" ? item.en : translatePhrase(item.en, lang);
+        link.textContent = lang === "hu" ? item.hu : lang === "de" ? item.de : translatePhrase(item.de, lang);
         link.setAttribute("role", "menuitem");
         if (currentKey === item.key) {
           link.setAttribute("aria-current", "page");
@@ -4154,7 +4154,7 @@
     if (node.dataset && node.dataset[originalKey] === undefined) node.dataset[originalKey] = node.getAttribute(attribute) || "";
     const original = node.dataset?.[originalKey] || "";
     if (!original) return;
-    node.setAttribute(attribute, lang === "hu" || lang === "en" ? original : translatePhrase(original, lang));
+    node.setAttribute(attribute, lang === "hu" || lang === "de" ? original : translatePhrase(original, lang));
   };
 
   const applyTextNodeTranslations = (lang) => {
@@ -4172,7 +4172,7 @@
     while (walker.nextNode()) nodes.push(walker.currentNode);
     nodes.forEach((node) => {
       if (node.__bpsOriginalText === undefined) node.__bpsOriginalText = node.nodeValue;
-      node.nodeValue = lang === "hu" || lang === "en" ? node.__bpsOriginalText : translateInlineText(node.__bpsOriginalText, lang);
+      node.nodeValue = lang === "hu" || lang === "de" ? node.__bpsOriginalText : translateInlineText(node.__bpsOriginalText, lang);
     });
   };
 
@@ -4184,7 +4184,7 @@
       if (panel.dataset.i18nOriginalText === undefined) panel.dataset.i18nOriginalText = panel.textContent;
       const panelLang = panel.dataset.langPanel;
       const hasExactPanel = !!panel.parentElement?.querySelector(`[data-lang-panel="${lang}"]`);
-      const showPanel = lang === panelLang || (!["hu", "en"].includes(lang) && panelLang === "en" && !hasExactPanel);
+      const showPanel = lang === panelLang || (!["hu", "de"].includes(lang) && panelLang === "de" && !hasExactPanel);
       panel.hidden = !showPanel;
       panel.setAttribute("aria-hidden", String(!showPanel));
       if (showPanel) {
@@ -4196,14 +4196,14 @@
     });
 
     document.querySelectorAll("[data-text-hu]").forEach((node) => {
-      const source = lang === "hu" ? node.dataset.textHu : node.dataset.textEn || node.dataset.textHu;
-      const value = lang === "hu" || lang === "en" ? source : translatePhrase(node.dataset.textEn || source, lang);
+      const source = lang === "hu" ? node.dataset.textHu : node.dataset.textDe || node.dataset.textHu;
+      const value = lang === "hu" || lang === "de" ? source : translatePhrase(node.dataset.textDe || source, lang);
       if (value && node.textContent !== value) node.textContent = value;
     });
 
     document.querySelectorAll("[data-aria-hu]").forEach((node) => {
-      const source = lang === "hu" ? node.dataset.ariaHu : node.dataset.ariaEn || node.dataset.ariaHu;
-      const value = lang === "hu" || lang === "en" ? source : translatePhrase(node.dataset.ariaEn || source, lang);
+      const source = lang === "hu" ? node.dataset.ariaHu : node.dataset.ariaDe || node.dataset.ariaHu;
+      const value = lang === "hu" || lang === "de" ? source : translatePhrase(node.dataset.ariaDe || source, lang);
       if (value) node.setAttribute("aria-label", value);
     });
 
@@ -4240,7 +4240,7 @@
     const normalized = normalizeLanguage(lang) || fallbackLanguage;
     persistLanguage(normalized);
     closeLanguageSelector();
-    if (normalized === "en" || normalized === "hu") {
+    if (normalized === "de" || normalized === "hu") {
       const targetHref = routeHref(currentRouteKey(), normalized);
       const target = new URL(targetHref, window.location.origin);
       target.hash = window.location.hash;
@@ -7019,7 +7019,7 @@
     const existing = nav.querySelector("[data-cleaning-link]") || nav.querySelector('a[href="cleaning-services-sopron.html"]');
     if (existing) {
       existing.dataset.textHu = "Takarítás";
-      existing.dataset.textEn = "Cleaning";
+      existing.dataset.textDe = "Reinigung";
       syncTextNodes(currentLang());
       return;
     }
@@ -7028,8 +7028,8 @@
     link.href = "cleaning-services-sopron.html";
     link.dataset.cleaningLink = "true";
     link.dataset.textHu = "Takarítás";
-    link.dataset.textEn = "Cleaning";
-    link.textContent = currentLang() === "hu" ? "Takarítás" : "Cleaning";
+    link.dataset.textDe = "Reinigung";
+    link.textContent = currentLang() === "hu" ? "Takarítás" : "Reinigung";
 
     const handymanLink = nav.querySelector('a[href="handyman-services-sopron.html"]');
     const gardenLink = nav.querySelector('a[href="garden-maintenance-sopron.html"]');
@@ -7111,7 +7111,7 @@
     closeLanguageSelector({ restoreFocus: true });
   });
 
-  const quoteFormLang = () => (routeLanguage() === "hu" ? "hu" : "en");
+  const quoteFormLang = () => (routeLanguage() === "hu" ? "hu" : "de");
   const quotePagePath = () => normalizePath(window.location.pathname);
   const quoteEventBase = () => ({
     page_path: quotePagePath(),
@@ -7561,7 +7561,7 @@
 
   let scheduled = false;
 
-  const homeLang = () => (document.documentElement.lang === "en" ? "en" : "hu");
+  const homeLang = () => (document.documentElement.lang === "de" ? "de" : "hu");
 
   const applySituationImages = () => {
     document.querySelectorAll(".situation-grid .problem img").forEach((image, index) => {
@@ -7579,7 +7579,7 @@
     if (!nav) return;
 
     const lang = homeLang();
-    const label = lang === "hu" ? "Karbantartás" : "Maintenance";
+    const label = lang === "hu" ? "Karbantartás" : "Instandhaltung";
     const existing = nav.querySelector("[data-maintenance-link]");
 
     if (existing) {
@@ -7605,7 +7605,7 @@
     if (!nav) return;
 
     const lang = homeLang();
-    const label = lang === "hu" ? "Ezermester" : "Handyman";
+    const label = lang === "hu" ? "Ezermester" : "Hausmeisterservice";
     const existing =
       nav.querySelector("[data-handyman-link]") ||
       nav.querySelector('a[href="handyman-services-sopron.html"]');
@@ -7648,7 +7648,7 @@
     if (!nav) return;
 
     const lang = homeLang();
-    const label = lang === "hu" ? "Festés és faljavítás" : "Painting & Wall Repairs";
+    const label = lang === "hu" ? "Festés és faljavítás" : "Malerarbeiten & Wandreparaturen";
     const existing = nav.querySelector("[data-painting-link]") || nav.querySelector('a[href="painting-wall-repairs-sopron.html"]');
 
     if (existing) {
@@ -7679,7 +7679,7 @@
     if (!nav) return;
 
     const lang = homeLang();
-    const label = lang === "hu" ? "Kertfenntartás" : "Garden Maintenance";
+    const label = lang === "hu" ? "Kertfenntartás" : "Gartenpflege";
     const existing = nav.querySelector("[data-garden-link]") || nav.querySelector('a[href="garden-maintenance-sopron.html"]');
 
     if (existing) {
@@ -7715,7 +7715,7 @@
     if (!nav) return;
 
     const lang = homeLang();
-    const label = lang === "hu" ? "Takarítás" : "Cleaning";
+    const label = lang === "hu" ? "Takarítás" : "Reinigung";
     const existing =
       nav.querySelector("[data-cleaning-link]") ||
       nav.querySelector('a[href="cleaning-services-sopron.html"]');

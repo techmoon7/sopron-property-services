@@ -2,35 +2,35 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const serviceOptions = {
-  maintenance: { en: "Property maintenance", hu: "Ingatlankarbantartás" },
-  handyman: { en: "Handyman / small repairs", hu: "Ezermester / kisebb javítások" },
-  painting: { en: "Painting and wall repairs", hu: "Szobafestés és faljavítás" },
-  garden: { en: "Garden maintenance", hu: "Kertfenntartás" },
-  cleaning: { en: "Cleaning", hu: "Takarítás" },
-  airbnb: { en: "Airbnb maintenance", hu: "Airbnb-karbantartás" },
+  maintenance: { de: "Immobilienpflege", hu: "Ingatlankarbantartás" },
+  handyman: { de: "Hausmeisterservice / Kleinreparaturen", hu: "Ezermester / kisebb javítások" },
+  painting: { de: "Malerarbeiten und Wandreparaturen", hu: "Szobafestés és faljavítás" },
+  garden: { de: "Gartenpflege", hu: "Kertfenntartás" },
+  cleaning: { de: "Reinigung", hu: "Takarítás" },
+  airbnb: { de: "Airbnb-Betreuung", hu: "Airbnb-karbantartás" },
   foreign_owner: {
-    en: "Property support for a foreign owner",
+    de: "Betreuung für ausländische Eigentümer",
     hu: "Ingatlankezelési segítség külföldi tulajdonosnak",
   },
-  other: { en: "Other", hu: "Egyéb" },
+  other: { de: "Sonstiges", hu: "Egyéb" },
 };
 
 const propertyOptions = {
-  apartment: { en: "Apartment", hu: "Lakás" },
-  house: { en: "House", hu: "Ház" },
-  airbnb_rental: { en: "Airbnb / rental", hu: "Airbnb / kiadó ingatlan" },
-  office: { en: "Office", hu: "Iroda" },
-  representative_property: { en: "Representative property", hu: "Képviseleti ingatlan" },
-  garden_outdoor: { en: "Garden / outdoor area", hu: "Kert / kültéri terület" },
-  other: { en: "Other", hu: "Egyéb" },
+  apartment: { de: "Wohnung", hu: "Lakás" },
+  house: { de: "Haus", hu: "Ház" },
+  airbnb_rental: { de: "Airbnb / Mietobjekt", hu: "Airbnb / kiadó ingatlan" },
+  office: { de: "Büro", hu: "Iroda" },
+  representative_property: { de: "Repräsentative Immobilie", hu: "Képviseleti ingatlan" },
+  garden_outdoor: { de: "Garten / Außenbereich", hu: "Kert / kültéri terület" },
+  other: { de: "Sonstiges", hu: "Egyéb" },
 };
 
 const timingOptions = {
-  asap: { en: "As soon as possible", hu: "Amint lehetséges" },
-  week: { en: "Within one week", hu: "Egy héten belül" },
-  month: { en: "Within one month", hu: "Egy hónapon belül" },
+  asap: { de: "So schnell wie möglich", hu: "Amint lehetséges" },
+  week: { de: "Innerhalb einer Woche", hu: "Egy héten belül" },
+  month: { de: "Innerhalb eines Monats", hu: "Egy hónapon belül" },
   flexible: {
-    en: "Flexible / just requesting information",
+    de: "Flexibel / nur Informationsanfrage",
     hu: "Rugalmas / egyelőre érdeklődöm",
   },
 };
@@ -55,26 +55,26 @@ const routeService = {
 };
 
 const labels = {
-  en: {
-    greeting: "Hello! I would like to request a quote from Sopron Property Services.",
+  de: {
+    greeting: "Hallo! Ich möchte gerne ein Angebot von Sopron Property Services anfragen.",
     name: "Name",
-    service: "Service",
-    propertyType: "Property type",
-    location: "Location / district",
-    timing: "Preferred timing",
-    access: "Access information",
-    description: "Task description",
-    photos: "Photos",
-    page: "Page",
-    photosYes: "Photos are ready and will be attached in WhatsApp.",
-    photosNo: "No photos yet / I will explain in WhatsApp.",
+    service: "Leistung",
+    propertyType: "Immobilientyp",
+    location: "Ort / Gegend",
+    timing: "Gewünschter Zeitpunkt",
+    access: "Zugangsinformationen",
+    description: "Aufgabenbeschreibung",
+    photos: "Fotos",
+    page: "Seite",
+    photosYes: "Fotos sind bereit und werden in WhatsApp angehängt.",
+    photosNo: "Noch keine Fotos / Ich erkläre es in WhatsApp.",
   },
   hu: {
     greeting: "Üdvözlöm! Ajánlatot szeretnék kérni a Sopron Property Servicestől.",
     name: "Név",
     service: "Szolgáltatás",
     propertyType: "Ingatlan típusa",
-    location: "Helyszín / kerület",
+    location: "Helyszín / környék",
     timing: "Kívánt időpont",
     access: "Bejutási információ",
     description: "Feladat leírása",
@@ -131,17 +131,17 @@ const analyticsPayload = (payload, path, lang) => ({
 
 const piiValues = [
   "Jane Owner",
-  "District V",
+  "Belváros",
   "Door code 1234",
   "Paint two cracked walls",
-  "Hello! I would like to request a quote",
+  "Hallo! Ich möchte gerne ein Angebot",
 ];
 
-const englishPayload = {
+const germanPayload = {
   name: "Jane Owner",
   service: "painting",
   propertyType: "apartment",
-  location: "District V",
+  location: "Belváros",
   timing: "week",
   access: "Door code 1234",
   description: "Paint two cracked walls",
@@ -164,19 +164,19 @@ const hungarianPayload = {
 };
 
 assert.deepEqual(validateRequired({}), ["name", "service", "description", "timing", "consent"]);
-assert.deepEqual(validateRequired(englishPayload), []);
-["Sopron", "Buda", "Pest", "13", "XIII", "belváros", "nem tudom", ""].forEach((location) => {
-  assert.deepEqual(validateRequired({ ...englishPayload, location }), []);
+assert.deepEqual(validateRequired(germanPayload), []);
+["Sopron", "Belváros", "Lővérek", "13", "XIII", "belváros", "nem tudom", ""].forEach((location) => {
+  assert.deepEqual(validateRequired({ ...germanPayload, location }), []);
 });
 
-const englishMessage = buildMessage(englishPayload, "en");
-assert.match(englishMessage, /Painting and wall repairs/);
-assert.match(englishMessage, /Page: https:\/\/sopronpropertyservices.hu\/painting-wall-repairs-sopron.html/);
-assert.doesNotMatch(englishMessage, /undefined/);
-assert.doesNotMatch(englishMessage, /utm=/);
+const germanMessage = buildMessage(germanPayload, "de");
+assert.match(germanMessage, /Malerarbeiten und Wandreparaturen/);
+assert.match(germanMessage, /Seite: https:\/\/sopronpropertyservices.hu\/painting-wall-repairs-sopron.html/);
+assert.doesNotMatch(germanMessage, /undefined/);
+assert.doesNotMatch(germanMessage, /utm=/);
 
-const englishWithoutLocation = buildMessage({ ...englishPayload, location: "   " }, "en");
-assert.doesNotMatch(englishWithoutLocation, /Location \/ district:/);
+const germanWithoutLocation = buildMessage({ ...germanPayload, location: "   " }, "de");
+assert.doesNotMatch(germanWithoutLocation, /Ort \/ Gegend:/);
 
 const hungarianMessage = buildMessage(hungarianPayload, "hu");
 assert.match(hungarianMessage, /Üdvözlöm!/);
@@ -186,7 +186,7 @@ assert.doesNotMatch(hungarianMessage, /Ingatlan típusa:/);
 assert.doesNotMatch(hungarianMessage, /Bejutási információ:/);
 
 const hungarianWithoutLocation = buildMessage({ ...hungarianPayload, location: "" }, "hu");
-assert.doesNotMatch(hungarianWithoutLocation, /Helyszín \/ kerület:/);
+assert.doesNotMatch(hungarianWithoutLocation, /Helyszín \/ környék:/);
 
 const encodedUrl = `https://wa.me/36206671832?text=${encodeURIComponent(hungarianMessage)}`;
 assert.equal(decodeURIComponent(new URL(encodedUrl).searchParams.get("text")), hungarianMessage);
@@ -197,7 +197,7 @@ Object.entries(routeService).forEach(([path, service]) => {
 assert.equal(routeService["/hu/szobafestes-faljavitas-sopron.html"], "painting");
 assert.equal(routeService["/cleaning-services-sopron.html"], "cleaning");
 
-const eventPayload = analyticsPayload(englishPayload, "/painting-wall-repairs-sopron.html", "en");
+const eventPayload = analyticsPayload(germanPayload, "/painting-wall-repairs-sopron.html", "de");
 const eventJson = JSON.stringify(eventPayload);
 piiValues.forEach((value) => assert.equal(eventJson.includes(value), false));
 assert.equal(eventPayload.service_type, "painting");
@@ -211,12 +211,12 @@ const refreshField = (state, payload, field, showErrors = false) => {
   if (!message || showErrors) setFieldError(state, field, message);
 };
 const formState = { name: { invalid: true, message: "Please complete this field." } };
-refreshField(formState, { ...englishPayload, name: "Jane Owner" }, "name");
+refreshField(formState, { ...germanPayload, name: "Jane Owner" }, "name");
 assert.deepEqual(formState.name, { invalid: false, message: "" });
 
 const scriptSource = fs.readFileSync("script.js", "utf8");
 const stylesSource = fs.readFileSync("styles.css", "utf8");
-const englishHome = fs.readFileSync("index.html", "utf8");
+const germanHome = fs.readFileSync("index.html", "utf8");
 const hungarianHome = fs.readFileSync("hu/index.html", "utf8");
 
 assert.match(scriptSource, /const assetBuildId = "slider-hitfix-v1-2026-08-08-01"/);
@@ -227,7 +227,7 @@ assert.match(scriptSource, /openLanguageSelectorFromTrigger/);
 assert.match(stylesSource, /\.language-menu\s*\{[\s\S]*?position:\s*absolute/);
 assert.match(stylesSource, /@media \(max-width: 1120px\)[\s\S]*?\.language-menu\s*\{[\s\S]*?position:\s*fixed/);
 assert.match(stylesSource, /pointer-events:\s*auto;/);
-assert.match(englishHome, /<button class="language-trust-badge" type="button" data-language-selector-trigger/);
+assert.match(germanHome, /<button class="language-trust-badge" type="button" data-language-selector-trigger/);
 assert.match(hungarianHome, /<button class="language-trust-badge" type="button" data-language-selector-trigger/);
 
 ["index.html", "hu/index.html"].forEach((file) => {

@@ -4,21 +4,21 @@ import path from "node:path";
 const root = process.cwd();
 const site = "https://sopronpropertyservices.hu";
 const routes = {
-  home: { en: "/", hu: "/hu/" },
-  maintenance: { en: "/property-maintenance-sopron.html", hu: "/hu/ingatlan-karbantartas-sopron.html" },
-  handyman: { en: "/handyman-services-sopron.html", hu: "/hu/ezermester-sopron.html" },
-  painting: { en: "/painting-wall-repairs-sopron.html", hu: "/hu/szobafestes-faljavitas-sopron.html" },
-  garden: { en: "/garden-maintenance-sopron.html", hu: "/hu/kertfenntartas-sopron.html" },
-  cleaning: { en: "/cleaning-services-sopron.html", hu: "/hu/takaritas-sopron.html" },
-  airbnb: { en: "/airbnb-property-maintenance-sopron.html", hu: "/hu/airbnb-karbantartas-sopron.html" },
+  home: { de: "/", hu: "/hu/" },
+  maintenance: { de: "/property-maintenance-sopron.html", hu: "/hu/ingatlan-karbantartas-sopron.html" },
+  handyman: { de: "/handyman-services-sopron.html", hu: "/hu/ezermester-sopron.html" },
+  painting: { de: "/painting-wall-repairs-sopron.html", hu: "/hu/szobafestes-faljavitas-sopron.html" },
+  gardde: { de: "/garden-maintenance-sopron.html", hu: "/hu/kertfenntartas-sopron.html" },
+  cleaning: { de: "/cleaning-services-sopron.html", hu: "/hu/takaritas-sopron.html" },
+  airbnb: { de: "/airbnb-property-maintenance-sopron.html", hu: "/hu/airbnb-karbantartas-sopron.html" },
   foreignOwners: {
-    en: "/property-management-for-foreign-owners-sopron.html",
+    de: "/property-management-for-foreign-owners-sopron.html",
     hu: "/hu/ingatlankezeles-kulfoldi-tulajdonosoknak-sopron.html",
   },
 };
 
 const pages = Object.entries(routes).flatMap(([key, value]) =>
-  ["en", "hu"].map((lang) => {
+  ["de", "hu"].map((lang) => {
     const urlPath = value[lang];
     const file =
       urlPath === "/"
@@ -93,12 +93,12 @@ for (const page of pages) {
   const canonicals = tags(head, /<link\s+rel=["']canonical["'][^>]*>/gi);
   if (canonicals.length !== 1 || attr(canonicals[0] || "", "href") !== page.url) fail(`${page.file}: canonical mismatch`);
 
-  for (const lang of ["en", "hu"]) {
+  for (const lang of ["de", "hu"]) {
     const alternate = tags(head, new RegExp(`<link\\s+rel=["']alternate["'][^>]*hreflang=["']${lang}["'][^>]*>`, "gi"))[0];
     if (!alternate || attr(alternate, "href") !== `${site}${routes[page.key][lang]}`) fail(`${page.file}: missing ${lang} hreflang`);
   }
   const xDefault = tags(head, /<link\s+rel=["']alternate["'][^>]*hreflang=["']x-default["'][^>]*>/gi)[0];
-  if (!xDefault || attr(xDefault, "href") !== `${site}${routes[page.key].en}`) fail(`${page.file}: missing x-default hreflang`);
+  if (!xDefault || attr(xDefault, "href") !== `${site}${routes[page.key].de}`) fail(`${page.file}: missing x-default hreflang`);
 
   const h1s = tags(body, /<h1\b[\s\S]*?<\/h1>/gi);
   if (h1s.length !== 1) fail(`${page.file}: expected exactly one H1, found ${h1s.length}`);

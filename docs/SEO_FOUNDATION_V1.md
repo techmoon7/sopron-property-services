@@ -9,21 +9,21 @@ Baseline protected by backup branch:
 
 ## What Changed
 
-- Added crawlable English and Hungarian URL equivalents for all indexable pages.
-- Kept German, Ukrainian and Chinese as client-side convenience languages only.
-- Added self canonicals, reciprocal `hreflang="en"` / `hreflang="hu"` and `x-default` on each EN/HU page.
+- Added crawlable German and Hungarian URL equivalents for all indexable pages. German fully replaces English as the default language at the site root (converted 2026-08-15); no English content remains customer-facing.
+- Kept Ukrainian and Chinese as inert, unused client-side data only (never reachable through the language switcher).
+- Added self canonicals, reciprocal `hreflang="de"` / `hreflang="hu"` and `x-default` (pointing to German) on each DE/HU page.
 - Removed meta keywords from generated page heads.
 - Added normalized JSON-LD:
   - Homepage: `LocalBusiness` and `WebSite`
   - Service pages: `LocalBusiness`, `Service`, `BreadcrumbList`
   - Service pages with visible FAQs: `FAQPage`
-- Updated sitemap to the full EN/HU canonical set.
+- Updated sitemap to the full DE/HU canonical set.
 - Preserved versioned CSS/JS asset loading with build ID `seo-foundation-v1-2026-07-21-02`.
 - Added `scripts/seo-audit.mjs` for repeatable validation.
 
 ## Crawlable URL Set
 
-English:
+German:
 
 - `https://sopronpropertyservices.hu/`
 - `https://sopronpropertyservices.hu/property-maintenance-sopron.html`
@@ -48,8 +48,8 @@ Hungarian:
 ## Language Behavior
 
 - Route language wins over stored language on initial load.
-- English and Hungarian language selections navigate to the equivalent static URL.
-- German, Ukrainian and Chinese remain client-side language modes and are not included in sitemap or `hreflang`.
+- German and Hungarian language selections navigate to the equivalent static URL.
+- Ukrainian and Chinese data remain in the codebase as unused, unreachable client-side artifacts and are not included in sitemap or `hreflang`.
 - No browser-language redirect is used.
 
 ## Validation

@@ -18,7 +18,7 @@ Submit:
 https://sopronpropertyservices.hu/sitemap.xml
 ```
 
-The sitemap should contain exactly the English and Hungarian canonical URLs documented in `docs/SEO_FOUNDATION_V1.md`.
+The sitemap should contain exactly the German and Hungarian canonical URLs documented in `docs/SEO_FOUNDATION_V1.md`.
 
 ## Inspection Checklist
 
