@@ -1,0 +1,9 @@
+exclude:
+  - CNAME
+  - .github
+  - _site
+
+include:
+  - assets
+
+plugins: []
