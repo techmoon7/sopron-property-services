@@ -236,6 +236,103 @@ assert.match(hungarianHome, /<button class="language-trust-badge" type="button" 
   assert.equal((html.match(/id="languageMenu"/g) || []).length, 1);
 });
 
+// Regression tests for the "WhatsApp form jumps instead of opening WhatsApp" bug.
+//
+// Root cause: the homepage (index.html / hu/index.html) is rendered twice —
+// once immediately by script.js against the static markup, then again,
+// asynchronously, by script-core.js, which replaces the entire document.body
+// via innerHTML once it finishes loading. Binding a live, interactive
+// WhatsApp quote form during the first (doomed) pass let a visitor's click or
+// typed input be silently destroyed or misdirected onto a different element
+// when script-core.js's replacement landed mid-interaction — surfacing as the
+// page "jumping" instead of opening WhatsApp. The fix gates quote-form
+// rendering/binding on script-core.js's own "render is stable" signal
+// (afterHomeRender), with a same-effect fallback if script-core.js fails to
+// load at all, so the form is only ever built once, against the final DOM.
+assert.match(
+  scriptSource,
+  /let homeCoreReady = false;/,
+  "script.js must track whether script-core.js's render has completed before it is safe to bind the quote form"
+);
+assert.match(
+  scriptSource,
+  /if \(homeCoreReady\) bindQuoteForms\(\);/,
+  "applyHomeEnhancements must not call bindQuoteForms() until homeCoreReady is true"
+);
+// The dangerous pre-fix pattern — applyHomeEnhancements calling
+// bindQuoteForms() unconditionally on its last line — must not reappear.
+// (initStandalonePage, the *other* function that calls bindQuoteForms()
+// unconditionally, is fine as-is: service pages never load script-core.js,
+// so there is no destructive body.innerHTML replacement race to guard
+// against there — only applyHomeEnhancements needs the gate.)
+const applyHomeEnhancementsBody = scriptSource.match(
+  /const applyHomeEnhancements = \(\) => \{([\s\S]*?)\n {2}\};/
+)?.[1];
+assert.ok(applyHomeEnhancementsBody, "could not locate applyHomeEnhancements body to inspect");
+assert.doesNotMatch(
+  applyHomeEnhancementsBody,
+  /^\s*bindQuoteForms\(\);\s*$/m,
+  "bindQuoteForms() must stay gated behind homeCoreReady inside applyHomeEnhancements, not called unconditionally"
+);
+assert.match(
+  scriptSource,
+  /window\.BPS_I18N\.afterHomeRender = \(\) => \{\s*\n\s*homeCoreReady = true;/,
+  "afterHomeRender (called by script-core.js once its render is stable) must flip homeCoreReady on"
+);
+assert.match(
+  scriptSource,
+  /script\.onerror = \(\) => \{[\s\S]*?homeCoreReady = true;[\s\S]*?applyHomeEnhancements\(\);\s*\n\s*\};/,
+  "if script-core.js fails to load, the static fallback form must still become usable"
+);
+
+// Regression tests for the "Hungarian pages contain German text" bug: two
+// content fields in script-core.js had German copy sitting in their `hu`
+// slot (audienceTitle, and the "Neglected yard or garden" situation card),
+// and two render functions read a stale `.en` property that no longer
+// existed after the EN->DE conversion (always rendering `undefined`/blank
+// on German pages). Pin the fixed values and the fixed property reads so
+// they cannot silently regress.
+const coreSource = fs.readFileSync("script-core.js", "utf8");
+assert.match(coreSource, /audienceTitle: \{ hu: "Kiknek hasznos\?", de: "Für wen ist das nützlich\?" \}/);
+assert.match(coreSource, /\["Elhanyagolt udvar vagy kert", "Vernachlässigter Hof oder Garten"/);
+// Render functions must read the current `.de` field, not the stale `.en`
+// key that stopped existing once the site converted from English to German.
+assert.match(coreSource, /state\.lang === "hu" \? item\.hu : item\.de/);
+assert.match(coreSource, /state\.lang === "hu" \? metric\.hu : metric\.de/);
+
+// Broader sweep: no `hu:`-labeled field in script-core.js should contain
+// obviously German prose (distinct German function words/nouns that never
+// legitimately appear in Hungarian text). This is the same heuristic used to
+// find the two bugs above, kept here so any future edit that reintroduces a
+// German string into a Hungarian slot fails the test suite.
+const germanSignal = new RegExp(
+  "\\b(" +
+    [
+      "und", "für", "auf", "mit", "oder", "nicht", "eine", "einer", "einen", "einem",
+      "ist", "sind", "wird", "werden", "kann", "können", "sowie", "über", "durch",
+      "während", "zwischen", "Sie", "Ihre", "Ihr", "unsere", "unser", "damit", "dabei",
+      "wenn", "warum", "welche", "müssen", "sollte", "Häufige", "Fragen", "kein", "keine",
+      "keinen", "dieser", "diese", "dieses", "jeder", "jede", "jedes", "beim", "vom",
+      "zum", "zur", "allen", "Garten", "Hof", "Büro", "Wand", "Wohnung", "Haus", "Häuser",
+      "Reparatur", "Reparaturen", "Reinigung", "Pflege", "Immobilie", "Immobilien",
+      "Eigentümer", "Gast", "Gäste", "Zimmer", "Vereinbart", "Vereinbarte", "Trockenbau",
+      "Decke", "Außenbereich", "Übergabe", "Umgebung", "Instandhaltung", "Kommunikation",
+      "Angebot", "Zeitpunkt", "Zugang", "Aufgabe", "Gegend", "Leistung", "Leistungen",
+      "Betreuung", "Verwalter", "Ausführung", "Kontakt",
+    ].join("|") +
+    ")\\b"
+);
+const badHuFields = [];
+const huFieldRe = /\bhu:\s*"((?:[^"\\]|\\.)*)"/g;
+let hf;
+while ((hf = huFieldRe.exec(coreSource))) {
+  const val = hf[1];
+  if (val.includes("ß") || germanSignal.test(val)) {
+    badHuFields.push(val);
+  }
+}
+assert.deepEqual(badHuFields, [], `German-looking text found in a "hu:" field: ${JSON.stringify(badHuFields)}`);
+
 let opening = false;
 const guardedSubmit = () => {
   if (opening) return false;

@@ -171,7 +171,7 @@
       services: { hu: "Szolgáltatások", de: "Dienstleistungen" },
       clients: { hu: "Ügyfelek", de: "Kunden" },
       projects: { hu: "Munkapéldák", de: "Arbeitsbeispiele" },
-      contact: { hu: "Kontakt", de: "Kontakt" },
+      contact: { hu: "Kapcsolat", de: "Kontakt" },
     },
     hero: {
       label: { hu: "Soproni ingatlankarbantartás", de: "Immobiliendienstleistungen in Sopron" },
@@ -271,7 +271,7 @@
     projectsTitle: { hu: "Illusztratív munkapéldák", de: "Anschauliche Arbeitsbeispiele" },
     processTitle: { hu: "Hogyan lesz az üzenetből elvégezhető feladat?", de: "Von der ersten Nachricht bis zum organisierten Job" },
     trustTitle: { hu: "Miért könnyű távolról is követni?", de: "Warum die Fernkoordination klar bleibt" },
-    audienceTitle: { hu: "Für wen ist das nützlich?", de: "Für wen das ist" },
+    audienceTitle: { hu: "Kiknek hasznos?", de: "Für wen ist das nützlich?" },
     faqTitle: { hu: "Gyakori kérdések", de: "Häufige Fragen" },
     contactTitle: { hu: "Küldjön fotót, és tisztázzuk a következő lépést", de: "Senden Sie Fotos und wir klären den nächsten Schritt" },
     contactText: {
@@ -404,7 +404,7 @@
     },
     {
       key: "drywall",
-      type: { hu: "Trockenbau / Decke", de: "Trockenbau / Decke" },
+      type: { hu: "Gipszkarton / mennyezet", de: "Trockenbau / Decke" },
       cover: "assets/finished-room-2.jpg",
       comparison: true,
       before: "assets/drywall-before-matched.jpg",
@@ -428,7 +428,7 @@
     },
     {
       key: "garden",
-      type: { hu: "Garten / Hof", de: "Garten / Außenbereich" },
+      type: { hu: "Kert / udvar", de: "Garten / Außenbereich" },
       cover: "assets/garden-maintenance-hero-garden.jpg",
       before: "assets/courtyard-before-entrance.jpg",
       after: "assets/courtyard-garden-1.jpg",
@@ -475,7 +475,7 @@
     metrics: [
       { n: "10", hu: "képes példa", de: "Bildbeispiele" },
       { n: "3", hu: "munkafázis", de: "Arbeitsphasen" },
-      { n: { hu: "Vereinbart", de: "Vereinbart" }, hu: "ütemezés", de: "timing" },
+      { n: { hu: "Egyeztetett", de: "Vereinbart" }, hu: "ütemezés", de: "Terminierung" },
     ],
   });
 
@@ -607,7 +607,7 @@
       before: "assets/office-before-touchup-matched.jpg",
       after: "assets/office-finished-1.jpg",
       title: { hu: "Iroda gyors frissítése látogatás előtt", de: "Nachbesserung im Büro vor einem Besuch" },
-      location: { hu: "Büro in Sopron", de: "Büro in Sopron" },
+      location: { hu: "Soproni iroda", de: "Büro in Sopron" },
       timeline: { hu: "rövid, célzott munka", de: "kurze, konzentrierte Arbeit" },
       client: { hu: "nemzetközi környezet", de: "internationales Umfeld" },
       summary: {
@@ -716,10 +716,10 @@
   const projectFilters = [
     { key: "all", label: { hu: "Összes munkatípus", de: "Alle Leistungsbereiche" } },
     { key: "painting", label: { hu: "Festés", de: "Malerarbeiten" } },
-    { key: "drywall", label: { hu: "Trockenbau", de: "Trockenbau" } },
-    { key: "garden", label: { hu: "Garten", de: "Garten" } },
+    { key: "drywall", label: { hu: "Gipszkarton", de: "Trockenbau" } },
+    { key: "garden", label: { hu: "Kert", de: "Garten" } },
     { key: "airbnb", label: { hu: "Airbnb", de: "Airbnb" } },
-    { key: "office", label: { hu: "Büro", de: "Büro" } },
+    { key: "office", label: { hu: "Iroda", de: "Büro" } },
     { key: "handyman", label: { hu: "Kisebb javítás", de: "Kleine Reparaturen" } },
   ];
 
@@ -785,7 +785,7 @@
     ["Airbnb-vendégváltás", "Airbnb-Gästewechsel", "A látható hibákat, falnyomokat és kisebb javításokat a következő érkezéshez igazítva lehet priorizálni.", "Sichtbare Mängel, Wandspuren und kleine Reparaturen können bei der nächsten Ankunft priorisiert werden."],
     ["Bérlő kiköltözése után", "Nach dem Auszug eines Mieters", "Falhibák, kisebb sérülések, szerelési pontok és átadás előtti frissítés egy közös, követhető feladatlistába rendezhető.", "Wandspuren, kleinere Schäden, Beschläge und Ausbesserungen vor der Übergabe können in einem nachverfolgbaren Bereich organisiert werden."],
     ["Ingatlankezelői feladatlista", "Aufgabenliste für die Immobilienverwaltung", "Több apró karbantartási pont egy egyeztetésben kezelhető, így kevesebb külön kör és kevesebb félreértés marad.", "Mehrere kleine Wartungsaufgaben können in einem Koordinationsablauf bearbeitet werden, wodurch separate Nachverfolgungen und Missverständnisse reduziert werden."],
-    ["Vernachlässigter Hof oder Garten", "Vernachlässigter Hof oder Garten", "Fűnyírással, metszéssel és a járófelületek rendezésével a külső tér ismét gondozott, bemutatható képet mutathat.", "Durch Mähen, Beschneiden und Aufräumen von Wegen kann ein aufgeräumter, ansehnlicher Außenbereich wiederhergestellt werden."],
+    ["Elhanyagolt udvar vagy kert", "Vernachlässigter Hof oder Garten", "Fűnyírással, metszéssel és a járófelületek rendezésével a külső tér ismét gondozott, bemutatható képet mutathat.", "Durch Mähen, Beschneiden und Aufräumen von Wegen kann ein aufgeräumter, ansehnlicher Außenbereich wiederhergestellt werden."],
     ["Iroda vagy képviseleti tér látogatás előtt", "Büro oder repräsentativer Raum vor einem Besuch", "Kisebb faljavítások, festés és szerelések úgy ütemezhetők, hogy a napi működést és a belépési szabályokat is figyelembe vegyük.", "Kleinere Wandreparaturen, Maler- und Montagearbeiten können entsprechend den täglichen Abläufen und Zugangsanforderungen geplant werden."],
   ];
 
@@ -1023,7 +1023,7 @@
           return `
         <details class="stat" name="hero-facts" data-reveal>
           <summary aria-expanded="false" aria-controls="${panelId}">
-            <span><b>${state.lang === "hu" ? item.huN : item.enN}</b><small>${state.lang === "hu" ? item.hu : item.en}</small></span>
+            <span><b>${state.lang === "hu" ? item.huN : item.enN}</b><small>${state.lang === "hu" ? item.hu : item.de}</small></span>
             ${disclosureMarkup("disclosure-icon")}
           </summary>
           <p id="${panelId}">${state.lang === "hu" ? item.huDetail : item.enDetail}</p>
@@ -1598,7 +1598,7 @@
           </div>
           <p>${tx(item.description)}</p>
           <div class="project-metrics">
-            ${item.metrics.map((metric) => `<div><b>${typeof metric.n === "object" ? tx(metric.n) : metric.n}</b><small>${state.lang === "hu" ? metric.hu : metric.en}</small></div>`).join("")}
+            ${item.metrics.map((metric) => `<div><b>${typeof metric.n === "object" ? tx(metric.n) : metric.n}</b><small>${state.lang === "hu" ? metric.hu : metric.de}</small></div>`).join("")}
           </div>
           <div class="story-grid">
             <article class="story-card"><strong>${state.lang === "hu" ? "Kiinduló helyzet" : "Ausgangssituation"}</strong><p>${tx(item.problem)}</p></article>

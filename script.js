@@ -7560,6 +7560,18 @@
   ];
 
   let scheduled = false;
+  // The homepage is rendered twice: an immediate static/JS pass (this file) that
+  // paints instantly, then script-core.js loads asynchronously and replaces the
+  // entire document.body via innerHTML once its own render() completes. Binding
+  // an interactive WhatsApp quote form during that first pass is unsafe: if a
+  // visitor starts filling it in (or clicks submit) before script-core.js has
+  // finished its replacement, the destructive innerHTML swap can silently drop
+  // their input or move the click target underneath their cursor, which surfaces
+  // as the page "jumping" instead of opening WhatsApp. homeCoreReady gates quote
+  // form rendering/binding so it only ever happens once against the final,
+  // stable DOM (signalled via BPS_I18N.afterHomeRender, with a same-effect
+  // fallback if script-core.js fails to load at all).
+  let homeCoreReady = false;
 
   const homeLang = () => (document.documentElement.lang === "de" ? "de" : "hu");
 
@@ -7770,7 +7782,10 @@
     bindHeroLightbox();
     bindPaintReveal();
     bindConversionActionTracking();
-    bindQuoteForms();
+    // Only render/bind the quote form once the DOM is final (see homeCoreReady
+    // above) so a visitor can never interact with a form that is about to be
+    // destroyed by script-core.js's document.body.innerHTML replacement.
+    if (homeCoreReady) bindQuoteForms();
   };
 
   const scheduleHomeEnhancements = () => {
@@ -7800,11 +7815,21 @@
     script.onload = applyHomeEnhancements;
     script.onerror = () => {
       console.error("Sopron Property Services core script could not be loaded.");
+      // script-core.js will never run its render() (and therefore never replace
+      // document.body) if it failed to load, so there is no destructive-swap
+      // race left to protect against: it is safe to bind the quote form against
+      // the static fallback markup as a last resort so the contact form still
+      // works.
+      homeCoreReady = true;
+      applyHomeEnhancements();
     };
     document.head.appendChild(script);
   };
 
-  window.BPS_I18N.afterHomeRender = () => applyHomeEnhancements();
+  window.BPS_I18N.afterHomeRender = () => {
+    homeCoreReady = true;
+    applyHomeEnhancements();
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener(
