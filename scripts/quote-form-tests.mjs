@@ -219,7 +219,7 @@ const stylesSource = fs.readFileSync("styles.css", "utf8");
 const germanHome = fs.readFileSync("index.html", "utf8");
 const hungarianHome = fs.readFileSync("hu/index.html", "utf8");
 
-assert.match(scriptSource, /const assetBuildId = "slider-hitfix-v1-2026-08-08-01"/);
+assert.match(scriptSource, /const assetBuildId = "mobile-nav-hitfix-v1-2026-08-24-01"/);
 assert.doesNotMatch(scriptSource, /insertAdjacentElement\("afterend", languageSelector\)/);
 assert.doesNotMatch(scriptSource, /mobileTools\.insertBefore\(languageSelector/);
 assert.match(scriptSource, /languageSelectorTrigger/);
@@ -341,5 +341,90 @@ const guardedSubmit = () => {
 };
 assert.equal(guardedSubmit(), true);
 assert.equal(guardedSubmit(), false);
+
+// Regression tests for the "mobile plus/accordion controls don't work, taps
+// jump to the top or to the wrong page" bug.
+//
+// Root cause: on mobile (<=1120px), .header[data-nav-enhanced="true"]
+// .nav-dropdown-menu unconditionally forced `opacity: 1`,
+// `pointer-events: auto` and `visibility: visible`, overriding its ancestor
+// .nav's `visibility: hidden; pointer-events: none;` closed state. The
+// services dropdown therefore stayed hit-testable and rendered (the whole
+// .nav container is position:fixed, so this held at every scroll position)
+// even while the mobile menu was fully closed, silently absorbing taps meant
+// for underlying page content — including the FAQ accordion's plus controls
+// on the Gartenpflege page — and occasionally navigating away or jumping to
+// a `#anchor` near the top when a dropdown link happened to be hit instead.
+// Confirmed live via elementsFromPoint() hit-testing before/after the fix.
+const mobileNavDropdownMenuRule = stylesSource.match(
+  /\.header\[data-nav-enhanced="true"\] \.nav-dropdown-menu \{([\s\S]*?)\n {2}\}/
+)?.[1];
+assert.ok(mobileNavDropdownMenuRule, "could not locate the mobile .nav-dropdown-menu rule to inspect");
+assert.doesNotMatch(
+  mobileNavDropdownMenuRule,
+  /visibility:\s*visible/,
+  ".nav-dropdown-menu must not force itself visible while its parent .nav is closed"
+);
+assert.doesNotMatch(
+  mobileNavDropdownMenuRule,
+  /pointer-events:\s*auto/,
+  ".nav-dropdown-menu must not force itself interactive while its parent .nav is closed"
+);
+assert.doesNotMatch(
+  mobileNavDropdownMenuRule,
+  /^\s*opacity:\s*1;/m,
+  ".nav-dropdown-menu must not force full opacity while its parent .nav is closed"
+);
+// The legitimate open-state rule (gated on .nav-open) must still exist —
+// this guards against "fixing" the bug by deleting the feature instead.
+assert.match(
+  stylesSource,
+  /html\.nav-menu-open \.header\[data-nav-enhanced="true"\]\.nav-open \.nav,\s*\n\s*body\.nav-menu-open \.header\[data-nav-enhanced="true"\]\.nav-open \.nav \{\s*\n\s*opacity: 1 !important;\s*\n\s*pointer-events: auto !important;/,
+  "the mobile nav must still become visible/interactive once actually opened"
+);
+
+// Regression tests for the "Gartenpflege visual effect is unnecessary" /
+// "Reinigungsservice wall-cleaning effect is slow and weak" requests.
+//
+// The garden hero must no longer run the heavy canvas-based finger-reveal
+// effect at all (no replacement animation was requested). The cleaning hero
+// keeps the before/after concept but as a lightweight, GPU-only
+// (clip-path-driven) comparison slider with no canvas, no pointer-capture
+// loop, and no continuous animation.
+["garden-maintenance-sopron.html", "hu/kertfenntartas-sopron.html"].forEach((file) => {
+  const html = fs.readFileSync(file, "utf8");
+  assert.doesNotMatch(html, /data-paint-reveal/, `${file}: garden hero must not use the paint-reveal effect`);
+});
+["cleaning-services-sopron.html", "hu/takaritas-sopron.html"].forEach((file) => {
+  const html = fs.readFileSync(file, "utf8");
+  assert.doesNotMatch(html, /data-paint-reveal/, `${file}: cleaning hero must not use the paint-reveal effect`);
+  assert.match(html, /class="service-hero-visual cleaning-compare"/, `${file}: cleaning hero must use the comparison slider`);
+  assert.match(html, /data-cleaning-compare-input/, `${file}: cleaning hero must expose the comparison range input`);
+});
+assert.match(scriptSource, /const bindCleaningCompare = \(\) => \{/);
+assert.match(scriptSource, /bindCleaningImageGallery\(\);\s*\n\s*bindCleaningCompare\(\);/);
+assert.doesNotMatch(
+  scriptSource.match(/const bindCleaningCompare = \(\) => \{([\s\S]*?)\n {2}\};/)?.[1] || "",
+  /requestAnimationFrame|setInterval|canvas|PointerEvent/,
+  "the cleaning comparison slider must stay a plain, lightweight input-driven control"
+);
+
+// Cache-busting version string must be bumped together across script.js,
+// styles.css and script-core.js's dynamically-loaded query string, so a
+// browser that already cached the old assets picks up the fix.
+["index.html", "hu/index.html", "garden-maintenance-sopron.html", "cleaning-services-sopron.html"].forEach((file) => {
+  const html = fs.readFileSync(file, "utf8");
+  assert.match(html, /styles\.css\?v=mobile-nav-hitfix-v1-2026-08-24-01/, `${file}: styles.css version must be bumped`);
+  assert.match(html, /script\.js\?v=mobile-nav-hitfix-v1-2026-08-24-01/, `${file}: script.js version must be bumped`);
+});
+
+// No empty-fragment / dead `href="#"` links anywhere on the site.
+["index.html", "hu/index.html", ...Object.keys(routeService)]
+  .filter((path) => path !== "/" && path !== "/hu/")
+  .forEach((path) => {
+    const file = path.startsWith("/hu/") ? `hu/${path.slice(4)}` : path.replace(/^\//, "");
+    const html = fs.readFileSync(file, "utf8");
+    assert.doesNotMatch(html, /href="#"/, `${file}: must not contain a dead href="#" link`);
+  });
 
 console.log("Quote form tests passed.");

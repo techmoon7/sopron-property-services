@@ -135,7 +135,9 @@ for (const page of pages) {
   }
 
   for (const image of tags(html, /<img\b[^>]*>/gi)) {
-    if (!attr(image, "alt")) fail(`${page.file}: image missing alt attribute`);
+    const isDecorative = attr(image, "aria-hidden") === "true";
+    const hasAltAttribute = /\salt=["']/.test(image);
+    if (!hasAltAttribute && !isDecorative) fail(`${page.file}: image missing alt attribute`);
     const src = attr(image, "src");
     const target = internalFileForHref(page.file, src);
     if (target && !fs.existsSync(path.join(root, target))) fail(`${page.file}: missing local image ${src} -> ${target}`);

@@ -26,7 +26,7 @@
   <meta name="twitter:image" content="https://sopronpropertyservices.hu/assets/cleaning-services-move-out-room.jpg">
   <meta name="twitter:image:alt" content="Sopron Property Services illusztratív szolgáltatási kép">
   <meta name="theme-color" content="#275c43">
-  <link rel="stylesheet" href="../styles.css?v=slider-hitfix-v1-2026-08-08-01">
+  <link rel="stylesheet" href="../styles.css?v=mobile-nav-hitfix-v1-2026-08-24-01">
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -190,7 +190,7 @@
   ]
 }
   </script>
-  <script src="../script.js?v=slider-hitfix-v1-2026-08-08-01" defer></script>
+  <script src="../script.js?v=mobile-nav-hitfix-v1-2026-08-24-01" defer></script>
 </head>
 <body class="service-page" data-page="cleaning-services" data-route-lang="hu">
   <header class="header">
@@ -246,8 +246,25 @@
           </a>
         </div>
       </div>
-      <div class="service-hero-visual" data-reveal data-paint-reveal data-paint-mode="clean" data-paint-region="0.035,0.045 0.965,0.045 0.965,0.94 0.035,0.94" data-paint-brush="150" data-paint-fade-delay="3600" data-paint-color="#f7fbf7" data-paint-opacity="0.72" data-paint-accent="#4c8b86">
-        <img src="../assets/cleaning-services-move-out-room.jpg" alt="Bright clean Sopron apartment room prepared for move-in or rental" loading="eager" decoding="async">
+      <div class="service-hero-visual cleaning-compare" data-reveal>
+        <img class="cleaning-compare-after" src="../assets/cleaning-services-move-out-room.jpg" alt="Fényes, tiszta soproni lakásszoba, beköltözésre vagy bérbeadásra előkészítve" loading="eager" decoding="async">
+        <div class="cleaning-compare-before" aria-hidden="true">
+          <img src="../assets/cleaning-services-move-out-room.jpg" alt="" aria-hidden="true" loading="eager" decoding="async">
+        </div>
+        <div class="cleaning-compare-divider" aria-hidden="true"></div>
+        <span class="cleaning-compare-tag cleaning-compare-tag-before" aria-hidden="true">
+          <span data-lang-panel="hu">Előtte</span><span data-lang-panel="de" hidden aria-hidden="true">Vorher</span>
+        </span>
+        <span class="cleaning-compare-tag cleaning-compare-tag-after" aria-hidden="true">
+          <span data-lang-panel="hu">Utána</span><span data-lang-panel="de" hidden aria-hidden="true">Nachher</span>
+        </span>
+        <div class="cleaning-compare-controls">
+          <label class="cleaning-compare-control-label" for="cleaning-compare-range">
+            <span data-lang-panel="hu">Húzza a csúszkát: előtte / utána</span>
+            <span data-lang-panel="de" hidden aria-hidden="true">Regler ziehen: Vorher / Nachher</span>
+          </label>
+          <input type="range" id="cleaning-compare-range" class="cleaning-compare-range" data-cleaning-compare-input min="0" max="100" value="50" step="1" data-aria-hu="Előtte-utána összehasonlító csúszka" data-aria-de="Vorher-Nachher-Vergleichsregler" aria-label="Előtte-utána összehasonlító csúszka">
+        </div>
         <div class="service-hero-panel">
           <span data-lang-panel="hu">Mire figyelünk?</span>
           <span data-lang-panel="de" hidden aria-hidden="true">Worauf es ankommt</span>

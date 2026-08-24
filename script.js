@@ -8,7 +8,7 @@
   ];
   const fallbackLanguage = "de";
   const languageCodes = new Set(supportedLanguages.map((language) => language.code));
-  const assetBuildId = "slider-hitfix-v1-2026-08-08-01";
+  const assetBuildId = "mobile-nav-hitfix-v1-2026-08-24-01";
   const paintDebugBuild = assetBuildId;
   const scriptBaseUrl = document.currentScript?.src || new URL("script.js", document.baseURI).href;
   try {
@@ -6990,6 +6990,19 @@
     requestAnimationFrame(() => modal.querySelector(".close")?.focus());
   };
 
+  const bindCleaningCompare = () => {
+    const root = document.querySelector(".cleaning-compare");
+    const input = root?.querySelector("[data-cleaning-compare-input]");
+    if (!root || !input || input.dataset.cleaningCompareBound === "true") return;
+    input.dataset.cleaningCompareBound = "true";
+
+    const applyPosition = () => {
+      root.style.setProperty("--cleaning-compare-pos", `${input.value}%`);
+    };
+    applyPosition();
+    input.addEventListener("input", applyPosition);
+  };
+
   const bindCleaningImageGallery = () => {
     if (document.body?.dataset.page !== "cleaning-services") return;
 
@@ -7519,6 +7532,7 @@
       bindGardenImageGallery();
     } else if (document.body?.dataset.page === "cleaning-services") {
       bindCleaningImageGallery();
+      bindCleaningCompare();
     } else {
       bindHeroLightbox();
     }
