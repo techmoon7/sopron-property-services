@@ -51,10 +51,10 @@ jobs:
           cp -R assets _site/assets
           cp -R hu _site/hu
           test "$(head -n 1 _site/index.html)" = "<!DOCTYPE html>"
-          grep -F '<link rel="stylesheet" href="styles.css?v=slider-hitfix-v1-2026-08-08-01">' _site/index.html
-          grep -F '<script src="script.js?v=slider-hitfix-v1-2026-08-08-01" defer></script>' _site/index.html
-          grep -F '<link rel="stylesheet" href="../styles.css?v=slider-hitfix-v1-2026-08-08-01">' _site/hu/index.html
-          grep -F '<script src="../script.js?v=slider-hitfix-v1-2026-08-08-01" defer></script>' _site/hu/index.html
+          grep -F '<link rel="stylesheet" href="styles.css?v=mobile-nav-hitfix-v1-2026-08-24-01">' _site/index.html
+          grep -F '<script src="script.js?v=mobile-nav-hitfix-v1-2026-08-24-01" defer></script>' _site/index.html
+          grep -F '<link rel="stylesheet" href="../styles.css?v=mobile-nav-hitfix-v1-2026-08-24-01">' _site/hu/index.html
+          grep -F '<script src="../script.js?v=mobile-nav-hitfix-v1-2026-08-24-01" defer></script>' _site/hu/index.html
           test -s _site/property-maintenance-sopron.html
           test -s _site/handyman-services-sopron.html
           test -s _site/painting-wall-repairs-sopron.html
