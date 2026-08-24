@@ -383,6 +383,44 @@ assert.match(
   "the mobile nav must still become visible/interactive once actually opened"
 );
 
+// Regression test for the emergency-fix follow-up bug: the first fix above
+// removed the dropdown's forced-visible styling to stop it leaking through
+// while the nav is closed, but removed opacity/pointer-events/visibility
+// entirely rather than gating them — so the un-scoped desktop base rule
+// (`.nav-dropdown-menu { opacity: 0; pointer-events: none; visibility: hidden; }`,
+// only lifted by the desktop-only `.nav-dropdown.open` class, which mobile
+// never sets — it uses `.mobile-collapsed` instead) took over permanently,
+// leaving the services dropdown invisible and dead even while the mobile
+// menu was legitimately open. Confirmed live via elementsFromPoint()
+// hit-testing, focus(), and the accessibility tree all agreeing the links
+// were unreachable, then verified fixed against real Chrome via CDP.
+assert.match(
+  mobileNavDropdownMenuRule,
+  /opacity:\s*0;/,
+  ".nav-dropdown-menu must explicitly default to hidden/non-interactive on mobile"
+);
+assert.match(
+  mobileNavDropdownMenuRule,
+  /pointer-events:\s*none;/,
+  ".nav-dropdown-menu must explicitly default to non-interactive on mobile"
+);
+assert.match(
+  mobileNavDropdownMenuRule,
+  /visibility:\s*hidden;/,
+  ".nav-dropdown-menu must explicitly default to hidden on mobile"
+);
+const mobileNavOpenDropdownMenuRule = stylesSource.match(
+  /\.header\[data-nav-enhanced="true"\]\.nav-open \.nav-dropdown-menu \{([\s\S]*?)\n {2}\}/
+)?.[1];
+assert.ok(
+  mobileNavOpenDropdownMenuRule,
+  "the mobile nav must have its own explicit .header[data-nav-enhanced=\"true\"].nav-open .nav-dropdown-menu rule — " +
+    "it must not depend on the desktop-only .nav-dropdown.open class, which mobile never sets"
+);
+assert.match(mobileNavOpenDropdownMenuRule, /opacity:\s*1;/, "the dropdown must become opaque when the mobile nav is open");
+assert.match(mobileNavOpenDropdownMenuRule, /pointer-events:\s*auto;/, "the dropdown must become interactive when the mobile nav is open");
+assert.match(mobileNavOpenDropdownMenuRule, /visibility:\s*visible;/, "the dropdown must become visible when the mobile nav is open");
+
 // Regression tests for the "Gartenpflege visual effect is unnecessary" /
 // "Reinigungsservice wall-cleaning effect is slow and weak" requests.
 //

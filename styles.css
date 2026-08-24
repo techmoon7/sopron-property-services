@@ -3088,7 +3088,17 @@ body.nav-menu-open .mobile-cta {
     border-radius: 18px;
     background: rgba(255, 250, 242, 0.86);
     box-shadow: none;
+    opacity: 0;
+    pointer-events: none;
     transform: none;
+    visibility: hidden;
+    transition: opacity 180ms ease, visibility 180ms ease;
+  }
+
+  .header[data-nav-enhanced="true"].nav-open .nav-dropdown-menu {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
   }
 
   .header[data-nav-enhanced="true"] .nav-dropdown.mobile-collapsed .nav-dropdown-menu {
