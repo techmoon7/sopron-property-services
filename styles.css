@@ -260,8 +260,6 @@ summary:focus-visible {
   margin-left: 0;
 }
 
-.stat summary:hover,
-.stat[open] summary,
 .problem summary:hover,
 .audience summary:hover,
 .audience[open] summary,
@@ -298,7 +296,6 @@ details[open] .disclosure-link {
   white-space: nowrap;
 }
 
-.stat summary:focus-visible,
 .audience summary:focus-visible,
 .faq summary:focus-visible {
   outline: 3px solid var(--accent2);
@@ -3957,9 +3954,14 @@ body:not(.service-page) .stats {
   box-shadow: 0 18px 46px rgba(25, 38, 31, 0.08);
 }
 
-body:not(.service-page) .stat summary {
-  min-height: 78px;
+body:not(.service-page) .stat {
   padding: 15px 16px;
+}
+
+@media (max-width: 620px) {
+  body:not(.service-page) .stats {
+    grid-template-columns: 1fr;
+  }
 }
 
 .transformation-showcase {
@@ -4339,27 +4341,6 @@ body:not(.service-page) .project-card.rich.featured .body {
     height: 120px;
   }
 
-  body:not(.service-page) .stats {
-    display: flex;
-    grid-template-columns: none;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 8px;
-    scroll-snap-type: x proximity;
-  }
-
-  body:not(.service-page) .stat {
-    flex: 0 0 min(280px, 82vw);
-    overflow: hidden;
-    border: 1px solid rgba(84, 75, 61, 0.12);
-    border-radius: 18px;
-    scroll-snap-align: start;
-  }
-
-  body:not(.service-page) .stat:last-child {
-    border-right: 1px solid rgba(84, 75, 61, 0.12);
-  }
-
   .transformation-showcase {
     padding-top: 46px;
   }
@@ -4426,18 +4407,6 @@ body:not(.service-page) .project-card.rich.featured .body {
     width: 100%;
     scroll-snap-align: none;
     white-space: normal;
-  }
-
-  body:not(.service-page) .stats {
-    display: grid;
-    grid-template-columns: 1fr;
-    overflow-x: visible;
-    scroll-snap-type: none;
-  }
-
-  body:not(.service-page) .stat {
-    width: 100%;
-    flex: 1 1 auto;
   }
 
   .hero-before-after-card {
@@ -4522,18 +4491,6 @@ body:not(.service-page) .project-card.rich.featured .body {
     min-width: 0;
     width: 100%;
     white-space: normal;
-  }
-
-  body:not(.service-page) .stats {
-    display: grid;
-    grid-template-columns: 1fr;
-    overflow-x: visible;
-    scroll-snap-type: none;
-  }
-
-  body:not(.service-page) .stat {
-    width: 100%;
-    flex: 1 1 auto;
   }
 
   .section-head {

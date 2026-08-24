@@ -1018,17 +1018,12 @@
   const statCards = () =>
     content.stats
       .map(
-        (item, index) => {
-          const panelId = `hero-stat-detail-${index}`;
-          return `
-        <details class="stat" name="hero-facts" data-reveal>
-          <summary aria-expanded="false" aria-controls="${panelId}">
-            <span><b>${state.lang === "hu" ? item.huN : item.enN}</b><small>${state.lang === "hu" ? item.hu : item.de}</small></span>
-            ${disclosureMarkup("disclosure-icon")}
-          </summary>
-          <p id="${panelId}">${state.lang === "hu" ? item.huDetail : item.enDetail}</p>
-        </details>`;
-        }
+        (item) => `
+        <div class="stat" data-reveal>
+          <b>${state.lang === "hu" ? item.huN : item.enN}</b>
+          <small>${state.lang === "hu" ? item.hu : item.de}</small>
+          <p>${state.lang === "hu" ? item.huDetail : item.enDetail}</p>
+        </div>`
       )
       .join("");
 
@@ -1289,7 +1284,7 @@
             </div>
             <figcaption class="note"><span class="note-mark" aria-hidden="true">01</span><span><strong>${tx(content.hero.noteTitle)}</strong><p>${tx(content.hero.noteText)}</p></span></figcaption>
           </figure>
-          <div class="stats" data-accordion-group="hero-stats">${statCards()}</div>
+          <div class="stats">${statCards()}</div>
         </section>
 
         <aside class="illustration-note wrap" data-reveal>

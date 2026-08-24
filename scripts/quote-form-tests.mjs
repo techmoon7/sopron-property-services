@@ -216,10 +216,11 @@ assert.deepEqual(formState.name, { invalid: false, message: "" });
 
 const scriptSource = fs.readFileSync("script.js", "utf8");
 const stylesSource = fs.readFileSync("styles.css", "utf8");
+const stylesBaseSource = fs.readFileSync("styles-base.css", "utf8");
 const germanHome = fs.readFileSync("index.html", "utf8");
 const hungarianHome = fs.readFileSync("hu/index.html", "utf8");
 
-assert.match(scriptSource, /const assetBuildId = "mobile-nav-hitfix-v1-2026-08-24-01"/);
+assert.match(scriptSource, /const assetBuildId = "card-row-fix-v1-2026-08-24-02"/);
 assert.doesNotMatch(scriptSource, /insertAdjacentElement\("afterend", languageSelector\)/);
 assert.doesNotMatch(scriptSource, /mobileTools\.insertBefore\(languageSelector/);
 assert.match(scriptSource, /languageSelectorTrigger/);
@@ -452,9 +453,59 @@ assert.doesNotMatch(
 // browser that already cached the old assets picks up the fix.
 ["index.html", "hu/index.html", "garden-maintenance-sopron.html", "cleaning-services-sopron.html"].forEach((file) => {
   const html = fs.readFileSync(file, "utf8");
-  assert.match(html, /styles\.css\?v=mobile-nav-hitfix-v1-2026-08-24-01/, `${file}: styles.css version must be bumped`);
-  assert.match(html, /script\.js\?v=mobile-nav-hitfix-v1-2026-08-24-01/, `${file}: script.js version must be bumped`);
+  assert.match(html, /styles\.css\?v=card-row-fix-v1-2026-08-24-02/, `${file}: styles.css version must be bumped`);
+  assert.match(html, /script\.js\?v=card-row-fix-v1-2026-08-24-02/, `${file}: script.js version must be bumped`);
 });
+
+// Regression tests for the "homepage DE/HU / Fotos / Sopron card row overflows
+// and its 'Mehr erfahren +' controls overlap the next card" bug.
+//
+// Root cause: each card's disclosure toggle used
+// `.disclosure-icon[data-disclosure-label]`, which turns the normally-small
+// 30px circular icon into a wide, nowrap pill ("Mehr erfahren +") sitting in
+// a `justify-content: space-between` flex row against the card heading. That
+// pill does not fit in a 1/3-width grid column at any viewport and visually
+// overlaps the neighbouring card. Fix: the three cards no longer use
+// <details>/<summary> disclosure toggles at all — they render as plain
+// static cards with the heading, subtitle and (previously hidden) detail
+// sentence always visible, stacked vertically with no competing flex row.
+["index.html", "hu/index.html"].forEach((file) => {
+  const html = fs.readFileSync(file, "utf8");
+  const statsBlock = html.match(/<div class="stats">([\s\S]*?)\n {10}<\/div>/)?.[1];
+  assert.ok(statsBlock, `${file}: could not locate the DE/HU · Fotos · Sopron stats row to inspect`);
+  assert.doesNotMatch(statsBlock, /Mehr erfahren|Részletek|disclosure-icon|<details|<summary/, `${file}: the stats row must not contain a disclosure/"Mehr erfahren" control`);
+  assert.equal((statsBlock.match(/class="stat"/g) || []).length, 3, `${file}: the stats row must render exactly 3 static cards`);
+});
+const coreStatCardsBody = coreSource.match(/const statCards = \(\) =>[\s\S]*?\.join\(""\);/)?.[0];
+assert.ok(coreStatCardsBody, "could not locate script-core.js's statCards() to inspect");
+assert.doesNotMatch(coreStatCardsBody, /details|summary|disclosureMarkup/, "script-core.js's dynamic re-render must not reintroduce the disclosure toggle for the stats row");
+// No negative margins anywhere in the .stat card rules (any breakpoint) —
+// negative margins were how the pre-fix layout tried to visually compensate
+// for the disclosure row and are explicitly disallowed in the rebuild.
+const statPRules = [...stylesSource.matchAll(/\.stat p \{([\s\S]*?)\}/g), ...stylesBaseSource.matchAll(/\.stat p \{([\s\S]*?)\}/g)];
+assert.ok(statPRules.length > 0, "could not locate any .stat p rules to inspect");
+statPRules.forEach((m) => {
+  assert.doesNotMatch(m[1], /margin:\s*-/, "no .stat p rule may use a negative margin");
+});
+// The 3-column desktop/tablet grid must collapse to a single stacked column
+// on mobile via an explicit, correctly-scoped selector (not left to lose a
+// specificity fight against the unconditional 3-column homepage rule).
+assert.match(
+  stylesSource,
+  /@media \(max-width: 620px\) \{\s*\n\s*body:not\(\.service-page\) \.stats \{\s*\n\s*grid-template-columns: 1fr;/,
+  "the homepage stats row must explicitly stack to one column at <=620px"
+);
+
+// Regression test for the "unused paint-reveal JavaScript still runs on
+// pages that don't use the effect" performance issue: bindPaintReveal must
+// bail out immediately, before any of its setup work, when the page has no
+// [data-paint-reveal] element at all (true for the garden and cleaning
+// pages after the effect was removed/replaced).
+assert.match(
+  scriptSource,
+  /const bindPaintReveal = \(\) => \{\s*\n\s*if \(!document\.querySelector\("\[data-paint-reveal\]"\)\) return;/,
+  "bindPaintReveal must return immediately on pages with no paint-reveal elements"
+);
 
 // No empty-fragment / dead `href="#"` links anywhere on the site.
 ["index.html", "hu/index.html", ...Object.keys(routeService)]

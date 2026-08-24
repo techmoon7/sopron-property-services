@@ -8,7 +8,7 @@
   ];
   const fallbackLanguage = "de";
   const languageCodes = new Set(supportedLanguages.map((language) => language.code));
-  const assetBuildId = "mobile-nav-hitfix-v1-2026-08-24-01";
+  const assetBuildId = "card-row-fix-v1-2026-08-24-02";
   const paintDebugBuild = assetBuildId;
   const scriptBaseUrl = document.currentScript?.src || new URL("script.js", document.baseURI).href;
   try {
@@ -4357,6 +4357,7 @@
   };
 
   const bindPaintReveal = () => {
+    if (!document.querySelector("[data-paint-reveal]")) return;
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
     const supportsPointerEvents = "PointerEvent" in window;
     const supportsTouchEvents = "ontouchstart" in window || (typeof TouchEvent !== "undefined" && navigator.maxTouchPoints > 0);
