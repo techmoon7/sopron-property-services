@@ -7565,298 +7565,1478 @@
     return;
   }
 
-  const situationImages = [
-    "assets/apartment-wall-refresh.jpg",
-    "assets/airbnb-before-turnover-matched.jpg",
-    "assets/painting-before-matched.jpg",
-    "assets/handyman-before-matched.jpg",
-    "assets/courtyard-before-entrance.jpg",
-    "assets/office-before-touchup-matched.jpg",
+  // ---------------------------------------------------------------------
+  // Homepage-only interactive behavior (project modal, gallery lightbox,
+  // carousels, before/after comparison sliders). The page itself is now
+  // complete static HTML (both languages), so only the genuinely on-demand
+  // pieces below remain --
+  // the giant page-template render() is gone for good.
+  // ---------------------------------------------------------------------
+  const localAssetVersion = (() => {
+    try {
+      return new URL(scriptBaseUrl).search;
+    } catch {
+      return "";
+    }
+  })();
+
+  const state = {
+    lang: currentLang(),
+    gallery: [],
+    galleryIndex: 0,
+    galleryZoom: 1,
+    galleryPanX: 0,
+    galleryPanY: 0,
+    projectIndex: 0,
+  };
+  const modalOpeners = new WeakMap();
+  const tx = (value) => translatePhrase(value?.[state.lang] || value?.de || value?.hu || "", state.lang);
+
+  const img = (id, w = 1200) => {
+    if (id.startsWith("assets/")) {
+      const url = new URL(id, scriptBaseUrl);
+      if (localAssetVersion) url.search = localAssetVersion;
+      return url.href;
+    }
+    return `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
+  };
+
+
+  const phaseLabel = {
+    before: { hu: "Előtte", de: "Vorher" },
+    process: { hu: "Munkafolyamat", de: "Arbeitsschritt" },
+    after: { hu: "Kész állapot", de: "Fertig" },
+  };
+
+  const phaseText = (phase) => tx(phaseLabel[phase] || phaseLabel.process);
+
+  const compareFallback = {
+    compareBefore: { hu: "Előtte", de: "Vorher", uk: "До", "zh-CN": "之前" },
+    compareAfter: { hu: "Utána", de: "Nachher", uk: "Після", "zh-CN": "之后" },
+    compareSliderName: {
+      hu: "Előtte-utána összehasonlító csúszka",
+      de: "Vorher-Nachher-Vergleichsschieber",
+      uk: "Повзунок порівняння до і після",
+      "zh-CN": "前后对比滑块",
+    },
+    viewFullComparison: {
+      hu: "Teljes összehasonlítás megnyitása",
+      de: "Vollständigen Vergleich ansehen",
+      uk: "Переглянути повне порівняння",
+      "zh-CN": "查看完整对比",
+    },
+    fullComparisonTitle: {
+      hu: "Teljes előtte-utána összehasonlítás",
+      de: "Vollständiger Vorher-Nachher-Vergleich",
+      uk: "Повне порівняння до і після",
+      "zh-CN": "完整前后对比",
+    },
+    fullComparisonDescription: {
+      hu: "Húzza a választóvonalat, vagy használja a nyílbillentyűket. A képek illusztratív példák, a konkrét feladatot mindig a helyszín állapota alapján egyeztetjük.",
+      de: "Ziehen Sie die Trennlinie oder verwenden Sie die Pfeiltasten. Die Bilder sind illustrative Beispiele; die konkrete Aufgabe wird immer anhand des Zustands der Immobilie abgestimmt.",
+      uk: "Перетягніть розділювач або використовуйте клавіші зі стрілками. Зображення є ілюстративними прикладами; конкретне завдання завжди узгоджується за фактичним станом об’єкта.",
+      "zh-CN": "拖动分隔线或使用方向键。图片为示意示例；具体工作始终根据物业实际状况确认。",
+    },
+  };
+  const compareText = (key) =>
+    t(key, state.lang) ||
+    compareFallback[key]?.[state.lang] ||
+    compareFallback[key]?.en ||
+    "";
+  const compareValueText = (value) => {
+    const rounded = Math.round(value);
+    const values = {
+      hu: `${rounded}% előtte kép látható`,
+      de: `${rounded}% Vorher-Bild sichtbar`,
+      uk: `${rounded}% зображення “до” видиме`,
+      "zh-CN": `${rounded}% 显示之前图片`,
+    };
+    return values[state.lang] || values.en;
+  };
+  const compareHintText = () =>
+    state.lang === "hu"
+      ? "Illusztratív előtte-utána összehasonlítás, amely a munkafolyamat jellegét és a várható eredményt mutatja. Kattintson vagy fókuszáljon a csúszkára, majd húzza a fogantyút, vagy használja a nyílbillentyűket."
+      : "Ein illustrativer Vorher-Nachher-Vergleich, der die Art der Arbeit und das erwartete Ergebnis zeigt. Klicken oder fokussieren Sie den Regler, ziehen Sie dann am Griff oder verwenden Sie die Pfeiltasten.";
+  const hasProjectComparison = (item) => item?.comparison !== false && !!item?.before && !!item?.after;
+  const compareMarkup = (item, options = {}) => {
+    const id = options.id || "compare";
+    const hintId = options.hintId || `${id}-hint`;
+    const className = options.className || "";
+    const initial = 50;
+    return `
+      <div class="compare ${className}" id="${id}" data-compare role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${initial}" aria-valuetext="${compareValueText(initial)}" aria-label="${compareText("compareSliderName")}" aria-describedby="${hintId}">
+        <img class="after" src="${img(item.after, 1600)}" alt="${tx(item.title)} - ${compareText("compareAfter")}" draggable="false">
+        <img class="before" src="${img(item.before, 1600)}" alt="${tx(item.title)} - ${compareText("compareBefore")}" draggable="false">
+        <span class="label compare-label left">${compareText("compareBefore")}</span>
+        <span class="label compare-label right">${compareText("compareAfter")}</span>
+        <span class="handle" aria-hidden="true"></span>
+      </div>
+      <p class="compare-hint" id="${hintId}">${compareHintText()}</p>`;
+  };
+
+  const photoCaption = (photo) => tx(photo?.[2]) || phaseText(photo?.[1]);
+
+  const projectLightboxImages = (project) => {
+    const pair = hasProjectComparison(project)
+      ? [
+          [project.before, "before", { hu: `${tx(project.title)} - kiinduló állapot`, de: `${tx(project.title)} - Ausgangszustand` }],
+          [project.after, "after", { hu: `${tx(project.title)} - rendezett kész állapot`, de: `${tx(project.title)} - fertiggestellter Zustand` }],
+        ]
+      : [];
+    const seen = new Set(pair.map((photo) => photo[0]));
+    return [...pair, ...(project.images || []).filter((photo) => !seen.has(photo[0]))];
+  };
+
+  const services = [
+    {
+      key: "painting",
+      cover: "assets/finished-room-1.jpg",
+      title: { hu: "Festés és falfrissítés", de: "Innenanstrich und Wandauffrischung" },
+      text: {
+        hu:
+          "Kopott, foltos vagy javított falak rendezése vendégváltás, bérlőváltás, fotózás vagy irodai látogatás előtt. A cél nem látványos ígéret, hanem tiszta felület, egységes összkép és vállalható átadás.",
+        de:
+          "Erfrischen Sie markierte, geflickte oder abgenutzte Wände vor Gastwechseln, Mieterübergaben, Fotoshootings oder Bürobesuchen. Ziel ist eine saubere Oberfläche, ein einheitlicher Raumeindruck und eine Übergabe, bei der Sie sich wohlfühlen.",
+      },
+      photos: [
+        ["12036084", "before", { hu: "Régi, sérült falfelület: itt a fal állapotát kellett javíthatóvá tenni.", de: "Alte, beschädigte Wandfläche: Die erste Aufgabe bestand darin, die Wand reparaturfähig zu machen." }],
+        ["804392", "before", { hu: "Felújítás előtti helyiség, ahol a falhibák és az alsó falsáv külön figyelmet igényelt.", de: "Raum vor der Auffrischung mit sichtbaren Wandschäden und einem unteren Wandbereich, der Aufmerksamkeit braucht." }],
+        ["3616757", "process", { hu: "Festésre előkészített teljes szoba, takart padlóval és összekészített anyagokkal.", de: "Kompletter Raum für den Anstrich vorbereitet, mit geschütztem Boden und bereitgestelltem Material." }],
+        ["3615721", "process", { hu: "A munkaterület rendezése festés előtt: a szoba használható állapotban marad a kivitelezéshez.", de: "Arbeitsbereich vor dem Streichen eingerichtet, damit der Raum während der Arbeiten übersichtlich und sauber bleibt." }],
+        ["6474471", "process", { hu: "Teljes falfelület javítása és hengerlése, nem csak egy közeli részlet.", de: "Eine ganze Wand wird repariert und gestrichen, nicht nur ein Detailausschnitt." }],
+        ["6473978", "process", { hu: "Nagyobb falmező csiszolása és simítása, hogy a festés egyenletes legyen.", de: "Ein großer Wandabschnitt wird geschliffen und egalisiert, damit der Anstrich gleichmäßig wirkt." }],
+        ["assets/finished-room-1.jpg", "after", { hu: "Frissen festett soproni lakószoba tiszta falakkal, radiátorral és parkettával.", de: "Frisch gestrichenes Wohnzimmer in Sopron mit sauberen Wänden, Heizkörpern und Parkettboden." }],
+        ["assets/finished-room-2.jpg", "after", { hu: "Üres, átadásra kész soproni szoba egységes falfelülettel és hétköznapi kialakítással.", de: "Leerer Raum in Sopron, bereit zur Übergabe, mit einheitlichen Wänden und einem alltagstauglichen Grundriss." }],
+        ["assets/airbnb-living-room.jpg", "after", { hu: "Rendezett, világos soproni lakótér friss falakkal és praktikus berendezéssel.", de: "Aufgeräumter, heller Wohnraum in Sopron mit aufgefrischten Wänden und praktischer Einrichtung." }],
+        ["assets/airbnb-bedroom.jpg", "after", { hu: "Tiszta, visszafogott soproni hálószoba vendég- vagy bérlőátadás előtt.", de: "Sauberes, schlichtes Schlafzimmer in Sopron vor der Übergabe an Gäste oder Mieter." }],
+      ],
+    },
+    {
+      key: "drywall",
+      cover: "assets/property-maintenance-drywall-sanding.jpg",
+      title: { hu: "Gipszkarton és almennyezet", de: "Trockenbau- und Deckenreparaturen" },
+      text: {
+        hu:
+          "Sérült vagy félkész gipszkarton, hézagok, glettelés, csiszolás és festésre előkészített felületek. A munka lényege, hogy a javítás ne külön hibaként látszódjon, hanem illeszkedjen a teljes helyiséghez.",
+        de:
+          "Beschädigte oder unfertige Trockenbauwände, Nähte, Spachtel-, Schleif- und lackierfähige Oberflächen. Ziel ist es, dass sich die Reparatur in den Raum einfügt und nicht als separater Mangel sichtbar bleibt.",
+      },
+      photos: [
+        ["assets/drywall-before-matched.jpg", "before", { hu: "Üres, félkész helyiség gipszkarton és festés előtti állapotban: a teljes tér látszik.", de: "Leerer, unfertiger Raum vor Trockenbau-Endbearbeitung und Anstrich, mit Blick auf den gesamten Raum." }],
+        ["15798783", "before", { hu: "Felújítás alatti teljes szoba, ahol a falak és mennyezeti csatlakozások még rendezésre várnak.", de: "Kompletter Raum in Renovierung, bei dem Wand- und Deckenanschlüsse noch fertiggestellt werden müssen." }],
+        ["5606879", "before", { hu: "Nagyobb belső munkaterület nyitott mennyezettel és javítandó felületekkel.", de: "Großer Innenarbeitsbereich mit offener Decke und Flächen, die noch repariert werden müssen." }],
+        ["3990359", "process", { hu: "Teljes felújítás alatti helyiség: létrák, takarás és előkészített munkaterület.", de: "Kompletter Raum in Renovierung mit Leitern, Abdeckungen und vorbereitetem Arbeitsbereich." }],
+        ["6474313", "process", { hu: "Mennyezeti gipszkarton felület hézagolás előtt, jól látható teljes felülettel.", de: "Trockenbaudecke vor der Fugenverspachtelung, mit Blick auf die größere Fläche." }],
+        ["6474202", "process", { hu: "Mennyezeti illesztések kezelése nagyobb felületen, nem elszigetelt részletként.", de: "Deckenfugen werden über eine größere Fläche hinweg bearbeitet, nicht nur als isoliertes Detail." }],
+        ["6474343", "process", { hu: "Gipszkarton mennyezet csiszolása és simítása festés előtt.", de: "Trockenbaudecke wird vor dem Anstrich geschliffen und geglättet." }],
+        ["6474300", "process", { hu: "Teljes szoba előkészítése: takarás, csiszolás, poros munkafázis kontrolláltan.", de: "Vollständige Raumvorbereitung mit Abkleben, Schleifen und kontrollierter, staubiger Arbeit." }],
+        ["6474129", "process", { hu: "Mennyezeti javítás munka közben, a teljes felülethez igazítva.", de: "Deckenreparatur in Arbeit, abgestimmt auf die gesamte Fläche." }],
+        ["9826455", "after", { hu: "Kész, üres helyiség: a javított felületek tiszta, festés utáni szobaképet adnak.", de: "Fertiggestellter, leerer Raum, in dem reparierte Flächen ein sauberes Interieur nach Abschluss der Arbeiten ergeben." }],
+      ],
+    },
+    {
+      key: "garden",
+      cover: "assets/courtyard-garden-1.jpg",
+      title: { hu: "Kert és udvar rendbetétele", de: "Aufräumarbeiten im Garten und Außenbereich" },
+      text: {
+        hu:
+          "Magas fű, benőtt udvar, elhanyagolt bejárat vagy terasz rendezése normál soproni környezetben. Bérleményeknél, Airbnb-nél és irodáknál a külső állapot már érkezéskor meghatározza az első benyomást.",
+        de:
+          "Mähen, Trimmen und Aufräumen von Innenhöfen, Eingängen und Terrassen in realen Umgebungen in Sopron. Bei Mietobjekten, Airbnb und Büros prägt der Außenbereich das Vertrauen, noch bevor jemand das Gebäude betritt.",
+      },
+      photos: [
+        ["assets/courtyard-before-entrance.jpg", "before", { hu: "Elhanyagolt soproni társasházi bejárat nyírás és lombgyűjtés előtt.", de: "Vernachlässigter Eingangsbereich eines Wohnhauses in Sopron vor dem Rasenmähen und Laubentfernen." }],
+        ["assets/courtyard-before-overgrown-lawn.jpg", "before", { hu: "Benőtt közös udvari gyep és bokorsáv egy soproni lakóépület mellett.", de: "Verwilderter Gemeinschaftsrasen und Strauchrand neben einem Wohnhaus in Sopron." }],
+        ["assets/courtyard-before-overgrown-wall.jpg", "before", { hu: "Rendezetlen udvari növényzet és járdaszegély visszavágás előtt.", de: "Ungepflegte Bepflanzung und Wegränder im Hof vor dem Rückschnitt." }],
+        ["assets/courtyard-process-mowing.jpg", "process", { hu: "Fűnyírás és szegélyrendezés egy soproni társasház belső udvarában.", de: "Rasenmähen und Kantenpflege in einem Wohnhof in Sopron." }],
+        ["assets/courtyard-process-hedge-trimming.jpg", "process", { hu: "Közönséges lombhullató sövény egyenletes visszavágása az udvari járda mellett.", de: "Eine gewöhnliche Laubhecke wird gleichmäßig entlang des Hofwegs geschnitten." }],
+        ["assets/courtyard-process-shrub-pruning.jpg", "process", { hu: "Túlnőtt udvari bokor metszése, a levágott ágak rendezett gyűjtésével.", de: "Rückschnitt eines verwilderten Strauchs im Hof, bei dem die abgeschnittenen Äste ordentlich eingesammelt werden." }],
+        ["assets/courtyard-process-green-waste.jpg", "process", { hu: "Nyírás utáni zöldhulladék összegyűjtése egy soproni közös udvarban.", de: "Sammeln von Grünschnitt nach dem Rückschnitt in einem gemeinschaftlich genutzten Hof in Sopron." }],
+        ["assets/courtyard-garden-1.jpg", "after", { hu: "Rendezett soproni belső udvar nyírt fűvel, visszavágott sövénnyel és tiszta járdával.", de: "Ein gepflegter Hof in Sopron mit gemähtem Rasen, geschnittenen Hecken und einem sauberen Weg." }],
+        ["assets/courtyard-garden-2.jpg", "after", { hu: "Karbantartott zöldsáv egy városi lakóépület mellett, egyszerű, jól áttekinthető kialakítással.", de: "Ein gepflegter Grünstreifen neben einem städtischen Wohnhaus, bewusst einfach und pflegeleicht gehalten." }],
+        ["assets/courtyard-garden-3.jpg", "after", { hu: "Tiszta bejárati út és gondozott növényzet egy soproni társasházi udvarban.", de: "Ein sauberer Eingangsweg und gepflegte Bepflanzung in einem Wohnhof in Sopron." }],
+      ],
+    },
+    {
+      key: "handyman",
+      cover: "assets/handyman-services-wall-fixtures.jpg",
+      title: { hu: "Kisebb javítások és szerelés", de: "Kleinere Reparaturen und Handwerkerarbeiten" },
+      text: {
+        hu:
+          "Polc, karnis, ajtóigazítás, szegély, rögzítés és átadás előtti apró hibák egy feladatlistába rendezve. Ezek külön-külön kicsinek tűnnek, együtt viszont sokat rontanak a tulajdonosi, bérlői vagy vendégélményen.",
+        de:
+          "Regale, Vorhangschienen, Türeinstellungen, Zierleisten, Befestigungen und kleine Übergabeprobleme in einer Aufgabenliste zusammengefasst. Für sich genommen mögen sie unbedeutend erscheinen, aber in ihrer Gesamtheit wirken sie sich stark darauf aus, wie sich die Immobilie anfühlt.",
+      },
+      photos: [
+        ["13909112", "before", { hu: "Belső tér átadás előtt, ahol a kisebb szerelési és rendezési pontok adják meg a végső képet.", de: "Innenraum vor der Übergabe, bei dem kleine Montage- und Aufräumarbeiten den Gesamteindruck prägen." }],
+        ["13588248", "before", { hu: "Rendezetlenebb fali tároló és dekorációs felület: a cél egy használhatóbb, tisztább összkép.", de: "Weniger ordentlicher Wandstauraum und Dekobereich vor der Schaffung eines nutzbareren, saubereren Eindrucks." }],
+        ["23224978", "process", { hu: "Fali kép vagy tartó pontos beállítása, hogy a helyiség rendezettebb legyen.", de: "Ein Wandbild oder eine Halterung wird ausgerichtet, damit der Raum ordentlicher wirkt." }],
+        ["4981802", "process", { hu: "Fali rögzítés és szerelés olyan helyen, ahol a kész eredmény használhatóbbá teszi a szobát.", de: "Wandmontagearbeiten, die den Raum nach Fertigstellung nutzbarer machen." }],
+        ["assets/handyman-services-wall-fixtures.jpg", "after", { hu: "Felszerelt, rendezett fali polcok: a javítás használható tárolást és tisztább képet ad.", de: "Montierte Wandregale schaffen nutzbaren Stauraum und ein saubereres Erscheinungsbild." }],
+        ["19109111", "after", { hu: "Stabil, kész polcrendszer, amely a korábbi üres vagy rendezetlen falfelületet használhatóvá teszi.", de: "Stabile, fertiggestellte Regale verwandeln eine leere oder unordentliche Wand in nutzbaren Stauraum." }],
+        ["9565966", "after", { hu: "Rendezett fali tároló kisebb szerelés után, átadásra alkalmasabb belső képpel.", de: "Ordentlicher Wandstauraum nach kleineren Montagearbeiten, der den Übergabeeindruck verbessert." }],
+        ["5824546", "after", { hu: "Teljes falon megjelenő tároló és polcrendszer kész állapotban.", de: "Vollständiger Wandstauraum mit Regalen im fertigen Zustand." }],
+        ["19109111", "after", { hu: "Egyszerű, stabil fali polc elkészült állapotban, hétköznapi lakásbelsőben.", de: "Ein einfaches, stabiles Wandregal in einer gewöhnlichen Wohnung." }],
+        ["5824575", "after", { hu: "Kész fali tároló teljes nézetben, ahol a javítás eredménye egyértelműen látszik.", de: "Fertiggestellter Wandstauraum in der Gesamtansicht, der das Ergebnis leicht verständlich macht." }],
+      ],
+    },
   ];
 
-  let scheduled = false;
-  // The homepage is rendered twice: an immediate static/JS pass (this file) that
-  // paints instantly, then script-core.js loads asynchronously and replaces the
-  // entire document.body via innerHTML once its own render() completes. Binding
-  // an interactive WhatsApp quote form during that first pass is unsafe: if a
-  // visitor starts filling it in (or clicks submit) before script-core.js has
-  // finished its replacement, the destructive innerHTML swap can silently drop
-  // their input or move the click target underneath their cursor, which surfaces
-  // as the page "jumping" instead of opening WhatsApp. homeCoreReady gates quote
-  // form rendering/binding so it only ever happens once against the final,
-  // stable DOM (signalled via BPS_I18N.afterHomeRender, with a same-effect
-  // fallback if script-core.js fails to load at all).
-  let homeCoreReady = false;
 
-  const homeLang = () => (document.documentElement.lang === "de" ? "de" : "hu");
+  const projects = [
+    {
+      key: "paint",
+      type: { hu: "Festés / faljavítás", de: "Maler-/Wandreparatur" },
+      cover: "assets/finished-room-1.jpg",
+      comparison: true,
+      before: "assets/painting-before-matched.jpg",
+      after: "assets/finished-room-1.jpg",
+      title: { hu: "Kopott falból tiszta, egységes felület", de: "Von müden Wänden bis hin zu einem sauberen Finish" },
+      summary: {
+        hu:
+          "Bérlőváltás vagy vendégérkezés előtt a falhibák azonnal látszanak. A cél az, hogy a helyiség gyorsan újra rendezett és bemutatható legyen.",
+        de:
+          "Vor einem Mieterwechsel oder Gästeanreise sind Wandmängel sofort sichtbar. Ziel ist es, den Raum schnell wieder ansehnlich zu machen.",
+      },
+      result: {
+        hu: "A helyiség tisztábbnak, gondozottabbnak és kiadhatóbbnak hat. A látogató nem a hibákat veszi észre először.",
+        de: "Der Raum wirkt sauberer, gepflegter und lässt sich leichter präsentieren. Besucher nehmen den Raum wahr, nicht die Mängel.",
+      },
+      works: {
+        hu: ["falhibák ellenőrzése fotók alapján", "felület előkészítése", "javítás és csiszolás", "egységes festés", "fotós visszajelzés"],
+        de: ["fotobasierte Zustandsprüfung der Wand", "Oberflächenvorbereitung", "Ausbessern und Schleifen", "einheitlicher Anstrich", "Foto-Update nach Fertigstellung"],
+      },
+      photos: services[0].photos,
+    },
+    {
+      key: "drywall",
+      type: { hu: "Gipszkarton / mennyezet", de: "Trockenbau / Decke" },
+      cover: "assets/finished-room-2.jpg",
+      comparison: true,
+      before: "assets/drywall-before-matched.jpg",
+      after: "assets/finished-room-2.jpg",
+      title: { hu: "Félkész gipszkartonból festésre kész felület", de: "Trockenbau vorbereitet für einen fertigen Innenraum" },
+      summary: {
+        hu:
+          "A látható hézagok, élek és csiszolatlan javítások félkész hatást keltenek. Ilyenkor a cél nem látványos trükk, hanem pontos, tiszta előkészítés.",
+        de:
+          "Sichtbare Nähte, Kanten und ungeschliffene Bereiche lassen einen Raum unvollendet erscheinen. Ziel ist eine sorgfältige Vorbereitung, nicht kosmetische Abkürzungen.",
+      },
+      result: {
+        hu: "A fal vagy mennyezet rendezett, festésre alkalmas és kevésbé vonja magára a figyelmet.",
+        de: "Wand oder Decke werden ordentlich, streichfertig und lenken nicht mehr vom Raum ab.",
+      },
+      works: {
+        hu: ["állapotfelmérés", "hézagok és élek javítása", "csiszolás", "felületkiegyenlítés", "átadás előtti ellenőrzés"],
+        de: ["Zustandsprüfung", "Fugen- und Kantenreparatur", "sanding", "Flächenegalisierung", "Prüfung vor der Übergabe"],
+      },
+      photos: services[1].photos,
+    },
+    {
+      key: "garden",
+      type: { hu: "Kert / udvar", de: "Garten / Außenbereich" },
+      cover: "assets/garden-maintenance-hero-garden.jpg",
+      before: "assets/courtyard-before-entrance.jpg",
+      after: "assets/courtyard-garden-1.jpg",
+      title: { hu: "Benőtt udvarból gondozottabb érkezés", de: "Vom überwucherten Hof zu einem gepflegteren Ankommen" },
+      summary: {
+        hu:
+          "A kert, udvar vagy bejárat gyakran az első pont, ahol az érdeklődő képet alkot az ingatlanról.",
+        de:
+          "Der Garten, der Hof oder der Eingangsbereich schafft oft schon Vertrauen, bevor überhaupt jemand das Grundstück betritt.",
+      },
+      result: {
+        hu: "Az ingatlan rendezettebbnek és gondozottabbnak tűnik már érkezéskor, ami bérleménynél és Airbnb-nél különösen fontos.",
+        de: "Die Immobilie wirkt vom ersten Moment an gepflegter – besonders wichtig bei Mietobjekten und Airbnb-Unterkünften.",
+      },
+      works: {
+        hu: ["fűnyírás", "szegélyrendezés", "benőtt részek visszavágása", "zöldhulladék összegyűjtése", "kész állapot fotózása"],
+        de: ["mowing", "Kantenpflege", "Zurückschneiden überwucherter Bereiche", "Grünschnittentsorgung", "Fotos im Endzustand"],
+      },
+      photos: services[2].photos,
+    },
+  ];
 
-  const applySituationImages = () => {
-    document.querySelectorAll(".situation-grid .problem img").forEach((image, index) => {
-      const source = situationImages[index];
-      if (!source) return;
+  Object.assign(projects[0], {
+    category: "painting",
+    location: { hu: "Soproni kiadó lakás", de: "Mietwohnung in Sopron" },
+    timeline: { hu: "egyeztetett ütemezés", de: "Terminvereinbarung vereinbart" },
+    client: { hu: "bérlőváltás előtt", de: "vor Mieterübergabe" },
+    problem: {
+      hu:
+        "A falakon javításnyomok, kopások és foltok voltak. Ilyenkor az ingatlan nem igényel teljes felújítást, de a látható hibák azonnal rontják az első benyomást.",
+      de:
+        "Die Wände wiesen sichtbare Flecken, Ausbesserungsstellen und Abnutzung auf. Eine komplette Renovierung war nicht nötig, doch die sichtbaren Mängel schwächten den ersten Eindruck sofort.",
+    },
+    approach: {
+      hu:
+        "A kritikus falrészeket fotók alapján beazonosítjuk, majd a felületet előkészítjük, javítjuk, csiszoljuk és egységesebb festett állapotban adjuk vissza.",
+      de:
+        "Die kritischen Wandbereiche werden anhand von Fotos identifiziert, anschließend vorbereitet, repariert, geschliffen und mit einem einheitlicheren Anstrich übergeben.",
+    },
+    evidence: {
+      hu: ["előtte fotók", "felület-előkészítés", "javítás és csiszolás", "kész állapot fotók"],
+      de: ["Fotos vorher", "Oberflächenvorbereitung", "Ausbessern und Schleifen", "Fotos im fertigen Zustand"],
+    },
+    metrics: [
+      { n: "10", hu: "képes példa", de: "Bildbeispiele" },
+      { n: "3", hu: "munkafázis", de: "Arbeitsphasen" },
+      { n: { hu: "Egyeztetett", de: "Vereinbart" }, hu: "ütemezés", de: "Terminierung" },
+    ],
+  });
 
-      const absolute = new URL(source, scriptBaseUrl).href;
-      if (image.src !== absolute) image.src = absolute;
-      image.removeAttribute("srcset");
-    });
+  Object.assign(projects[1], {
+    category: "drywall",
+    location: { hu: "Lakásbelső / mennyezeti rész", de: "Innendeckenbereich der Wohnung" },
+    timeline: { hu: "javítás és festésre előkészítés", de: "Reparatur und lackiergerechte Vorbereitung" },
+    client: { hu: "tulajdonosi felkészítés", de: "Vorbereitung des Eigentümers" },
+    problem: {
+      hu:
+        "A félkész gipszkarton és a rendezetlen hézagok amatőr hatást keltenek. Egy ilyen rész akkor is feltűnik, ha a lakás többi része rendben van.",
+      de:
+        "Unfertiger Trockenbau und raue Fugen lassen einen Innenraum improvisiert wirken. Selbst ein kleiner Bereich wie dieser fällt auf, wenn der Rest der Wohnung gepflegt ist.",
+    },
+    approach: {
+      hu:
+        "A hangsúly a pontos éleken, a simább átmeneteken és a festésre alkalmas felületen van. Nem látványos díszítés, hanem tiszta alapmunka.",
+      de:
+        "Der Fokus liegt auf saubereren Kanten, gleichmäßigeren Übergängen und einer streichfertigen Oberfläche. Es handelt sich um praktische Vorarbeit, nicht um dekoratives Kaschieren.",
+    },
+    evidence: {
+      hu: ["gipszkarton állapot", "hézagjavítás", "csiszolás", "átadás előtti kontroll"],
+      de: ["Zustand des Trockenbaus", "Fugenreparatur", "sanding", "Kontrolle vor der Übergabe"],
+    },
+    metrics: [
+      { n: "10", hu: "képes példa", de: "Bildbeispiele" },
+      { n: "5", hu: "ellenőrzési pont", de: "Kontrollpunkte" },
+      { n: "DE/HU", hu: "egyeztetés", de: "Kommunikation" },
+    ],
+  });
+
+  Object.assign(projects[2], {
+    category: "garden",
+    location: { hu: "Soproni udvar és bejárati rész", de: "Soproner Hof und Eingangsbereich" },
+    timeline: { hu: "szezonális rendbetétel", de: "Saisonale Aufräumarbeiten" },
+    client: { hu: "bérlemény / Airbnb előkészítés", de: "Vorbereitung für Vermietung / Airbnb" },
+    problem: {
+      hu:
+        "A magas fű, elhanyagolt szegély és rendezetlen bejárat már érkezéskor bizonytalanságot kelt. Ez különösen gond Airbnb-nél vagy bérleménynél.",
+      de:
+        "Überwuchertes Gras, unordentliche Kanten und ein vernachlässigter Eingang wecken Zweifel, noch bevor jemand die Immobilie betritt. Das ist besonders bei Mietobjekten und Airbnb-Unterkünften entscheidend.",
+    },
+    approach: {
+      hu:
+        "A cél nem kertépítés, hanem gyors, látható rend: nyírás, szegélyezés, visszavágás, összegyűjtés és fotózott kész állapot.",
+      de:
+        "Ziel ist keine Gartengestaltung, sondern schnell sichtbare Ordnung: Mähen, Kantenschnitt, Trimmen, Entsorgung und ein fotografisch festgehaltener Endzustand.",
+    },
+    evidence: {
+      hu: ["előtte állapot", "nyírás és szegélyezés", "zöldhulladék rendezése", "kész állapot"],
+      de: ["Zustand vorher", "Mähen und Kantenschnitt", "Grünschnitt-Aufräumung", "Fertiger Zustand"],
+    },
+    metrics: [
+      { n: "10", hu: "képes dokumentáció", de: "Fotoaufzeichnungen" },
+      { n: "1", hu: "rendezett érkezés", de: "Ordentlichere Ankunft" },
+      { n: "0", hu: "felesleges kör", de: "Unnötige Umwege" },
+    ],
+  });
+
+  projects.push(
+    {
+      key: "airbnb-turnover",
+      category: "airbnb",
+      type: { hu: "Airbnb / bérlőváltás", de: "Airbnb-/Mieterwechsel" },
+      cover: "assets/airbnb-living-room.jpg",
+      comparison: true,
+      before: "assets/airbnb-before-turnover-matched.jpg",
+      after: "assets/airbnb-living-room.jpg",
+      title: { hu: "Lakásfrissítés vendégérkezés előtt", de: "Auffrischung des Apartments vor Ankunft der Gäste" },
+      location: { hu: "Soproni Airbnb lakás", de: "Airbnb-Wohnung in Sopron" },
+      timeline: { hu: "vendégérkezéshez igazítva", de: "geplant um die Ankunft der Gäste herum" },
+      client: { hu: "vendégváltás előtt", de: "vor Gästewechsel" },
+      summary: {
+        hu:
+          "Vendégváltás előtt a kisebb hibák is feltűnőek. Ilyenkor a legfontosabb a pontosan egyeztetett, tiszta és dokumentált munka.",
+        de:
+          "Vor einem Gästewechsel fallen schon kleine Mängel auf. Im Vordergrund steht eine klar geplante, ordentliche und dokumentierte Arbeit.",
+      },
+      problem: {
+        hu:
+          "A lakásban több kisebb nyom, rögzítési hiba és javítandó rész jelent meg egyszerre. A tulajdonosnak nem külön szakikat kell szerveznie minden apróságra.",
+        de:
+          "Mehrere kleine Gebrauchsspuren, behebungsbedürftige Probleme und sichtbare Mängel traten gleichzeitig auf. Der Eigentümer sollte nicht für jede Kleinigkeit ein eigenes Gewerk koordinieren müssen.",
+      },
+      approach: {
+        hu:
+          "A látható hibákat rangsoroljuk: ami a vendégnek azonnal feltűnik, előre kerül. A munka végén képes visszajelzés segíti a távoli döntést.",
+        de:
+          "Sichtbare Probleme werden nach ihrer Wirkung auf die Gäste priorisiert. Nach Abschluss helfen Foto-Updates dem Eigentümer, auch aus der Ferne Entscheidungen zu treffen.",
+      },
+      result: {
+        hu:
+          "A lakás gyorsabban vállalható állapotba kerül, kevesebb bizonytalansággal a vendégérkezés előtt.",
+        de:
+          "Die Wohnung wird schneller vorzeigbar, mit weniger Unsicherheit vor der Ankunft der Gäste.",
+      },
+      works: {
+        hu: ["látható hibák listázása", "falfrissítés", "kisebb rögzítések", "átadás előtti ellenőrzés", "fotós dokumentáció"],
+        de: ["Liste sichtbarer Mängel", "Wandausbesserung", "Kleine Reparaturen", "Kontrolle vor der Übergabe", "Fotodokumentation"],
+      },
+      evidence: {
+        hu: ["problémalista", "javítás közbeni fotók", "kész állapot", "tulajdonosi visszajelzésre kész anyag"],
+        de: ["Mängelliste", "Fortschrittsfotos", "Fertiger Zustand", "Update für den Eigentümer"],
+      },
+      metrics: [
+        { n: "10", hu: "fotó", de: "Fotos" },
+        { n: "4", hu: "javítási típus", de: "Reparaturarten" },
+        { n: "1", hu: "kapcsolattartási pont", de: "Ansprechpartner" },
+      ],
+      photos: [
+        ["5102904", "before", { hu: "Vendégváltás előtti lakott állapot: a nappalit rendezettebbé és fotózhatóbbá kell tenni.", de: "Bewohnter Zustand vor dem Gästewechsel: Das Wohnzimmer muss aufgeräumter und präsentabler werden." }],
+        ["6195959", "process", { hu: "Airbnb előkészítés takarítással és ellenőrzéssel, teljesebb lakótérben látható munkával.", de: "Airbnb-Vorbereitung mit Reinigung und Kontrolle, gezeigt im größeren Kontext des Wohnraums." }],
+        ["6764827", "after", { hu: "Kész, rendezett nappali vendégérkezéshez: tiszta, átlátható és használható tér.", de: "Fertiges Wohnzimmer für die Ankunft der Gäste: sauber, aufgeräumt und nutzbar." }],
+        ["8135495", "after", { hu: "Rendezett hálószoba átadás előtt, tiszta textillel és ellenőrizhető összképpel.", de: "Aufgeräumtes Schlafzimmer vor der Übergabe, mit sauberen Textilien und einem gut überprüfbaren Gesamtzustand." }],
+        ["19899060", "after", { hu: "Világos, teljes nappali kész állapotban, amely jól mutat vendégfotón és átadáskor.", de: "Helles, komplettes Wohnzimmer im fertigen Zustand, geeignet für Gästefotos und Übergabe." }],
+        ["assets/airbnb-living-room.jpg", "after", { hu: "Hétköznapi soproni nappali rendezett, vendégfogadásra kész állapotban.", de: "Alltägliches Wohnzimmer in Sopron in aufgeräumtem, gästefertigem Zustand." }],
+        ["assets/finished-room-2.jpg", "after", { hu: "Frissen festett, egyszerű soproni szoba tiszta járófelülettel.", de: "Frisch gestrichenes, schlichtes Zimmer in Sopron mit klarer Wegführung." }],
+        ["assets/finished-room-1.jpg", "after", { hu: "Világos soproni lakószoba rendezett falakkal, átadásra kész állapotban.", de: "Helles Wohnzimmer in Sopron mit gepflegten Wänden, bereit zur Übergabe." }],
+        ["assets/airbnb-bedroom.jpg", "after", { hu: "Tiszta, visszafogott hálószoba, amely vendégnek és tulajdonosnak is könnyen ellenőrizhető.", de: "Sauberes, schlichtes Schlafzimmer, das sowohl für Gäste als auch für den Eigentümer leicht zu überblicken ist." }],
+        ["271624", "after", { hu: "Kompakt Airbnb lakótér kész állapotban, rendezett fallal és használható elrendezéssel.", de: "Kompakter Airbnb-Wohnbereich im fertigen Zustand, mit gepflegten Wänden und praktischem Grundriss." }],
+      ],
+    },
+    {
+      key: "office-touchup",
+      category: "office",
+      type: { hu: "Iroda / képviseleti tér", de: "Büro-/Repräsentationsraum" },
+      cover: "assets/office-finished-1.jpg",
+      comparison: true,
+      before: "assets/office-before-touchup-matched.jpg",
+      after: "assets/office-finished-1.jpg",
+      title: { hu: "Iroda gyors frissítése látogatás előtt", de: "Nachbesserung im Büro vor einem Besuch" },
+      location: { hu: "Soproni iroda", de: "Büro in Sopron" },
+      timeline: { hu: "rövid, célzott munka", de: "kurze, konzentrierte Arbeit" },
+      client: { hu: "nemzetközi környezet", de: "internationales Umfeld" },
+      summary: {
+        hu:
+          "Irodáknál és képviseleti tereknél nem fér bele a zavaros kivitelezés. A munka legyen rövid, diszkrét és tisztán kommunikált.",
+        de:
+          "Büros und repräsentative Räume brauchen ruhiges, organisiertes Arbeiten. Der Job sollte kurz, diskret und klar kommuniziert sein.",
+      },
+      problem: {
+        hu:
+          "A falakon és használati pontokon apró sérülések rontották a rendezett képet. Ezek nem nagy hibák, de egy látogatásnál feltűnnek.",
+        de:
+          "Kleine Gebrauchsspuren und abgenutzte Stellen beeinträchtigten den professionellen Eindruck des Büros. Es handelte sich nicht um größere Mängel, doch sie fallen bei einem Besuch auf.",
+      },
+      approach: {
+        hu:
+          "A munka a látható felületekre koncentrál: faljavítás, javítófestés, kisebb igazítások és tiszta átadás.",
+        de:
+          "Die Arbeiten konzentrieren sich auf sichtbare Flächen: Wandreparatur, Ausbesserungsanstrich, kleine Anpassungen und eine saubere Übergabe.",
+      },
+      result: {
+        hu:
+          "Az iroda rendezettebb, nyugodtabb és vendégfogadásra alkalmasabb benyomást kelt.",
+        de:
+          "Das Büro wirkt ordentlicher, ruhiger und besser vorbereitet für Besucher.",
+      },
+      works: {
+        hu: ["látható sérülések felmérése", "javítófestés", "gipszkarton részjavítás", "kisebb szerelés", "tiszta átadás"],
+        de: ["Kontrolle sichtbarer Mängel", "Ausbesserungsanstrich", "Kleinere Trockenbaureparatur", "Kleine Anpassungen", "Ordentliche Übergabe"],
+      },
+      evidence: {
+        hu: ["diszkrét munkaszervezés", "részletfotók", "átadás előtti ellenőrzés", "kész állapot"],
+        de: ["Diskrete Terminplanung", "Detailfotos", "Kontrolle vor der Übergabe", "Fertiger Zustand"],
+      },
+      metrics: [
+        { n: "DE/HU", hu: "kommunikáció", de: "Kommunikation" },
+        { n: "5", hu: "ellenőrzési pont", de: "Kontrollpunkte" },
+        { n: "10", hu: "kép", de: "Bilder" },
+      ],
+      photos: [
+        ["5483236", "before", { hu: "Üres irodatér frissítés előtt: a cél a tiszta, használatra kész munkakörnyezet.", de: "Leeres Büro vor der Auffrischung, mit dem Ziel eines sauberen, nutzbaren Arbeitsumfelds." }],
+        ["8477444", "before", { hu: "Nagyobb nyitott iroda átadás előtt, ahol a teljes tér összképe számít.", de: "Großes Großraumbüro vor der Übergabe, bei dem der Gesamteindruck entscheidend ist." }],
+        ["assets/office-process-wall-touchup.jpg", "process", { hu: "Szervezett javítófestés egy soproni iroda kisebb falszakaszán.", de: "Organisierter Ausbesserungsanstrich an einem kleinen Wandabschnitt in einem Büro in Sopron." }],
+        ["5511098", "process", { hu: "Nagyobb irodai munkatér ellenőrzése frissítés előtt, teljesebb perspektívából.", de: "Größerer Büroarbeitsbereich vor der Auffrischung, aus einer weiteren Perspektive gezeigt." }],
+        ["assets/office-finished-1.jpg", "after", { hu: "Rendezett soproni irodatér tiszta falakkal és hétköznapi berendezéssel.", de: "Gepflegtes Büro in Sopron mit sauberen Wänden und zweckmäßiger Einrichtung." }],
+        ["assets/office-finished-2.jpg", "after", { hu: "Világos, látogatófogadásra kész soproni váró- és közösségi tér.", de: "Heller Warte- und Gemeinschaftsbereich in Sopron, bereit für den Empfang von Besuchern." }],
+        ["assets/office-finished-3.jpg", "after", { hu: "Egyszerű soproni tárgyaló egységes falakkal és rendezett összképpel.", de: "Schlichter Besprechungsraum in Sopron mit einheitlichen Wänden und ordentlichem Erscheinungsbild." }],
+        ["7534216", "after", { hu: "Kész tárgyaló jellegű tér, tiszta falakkal és rendezett összképpel.", de: "Fertiggestellter Besprechungsraum mit sauberen Wänden und ordentlichem Erscheinungsbild." }],
+        ["36631699", "after", { hu: "Tágas iroda teljes nézetben, rendezett munkaállomásokkal.", de: "Geräumiges Büro in der Gesamtansicht, mit ordentlich gestalteten Arbeitsplätzen." }],
+        ["1181406", "after", { hu: "Teljes irodatér használat közben: a frissített környezet professzionálisabb képet ad.", de: "Voll genutzter Bürobereich, in dem das aufgefrischte Umfeld für einen professionelleren Eindruck sorgt." }],
+      ],
+    },
+    {
+      key: "handover-small-fixes",
+      category: "handyman",
+      type: { hu: "Kisebb javítások / átadás", de: "Kleine Reparaturen / Übergabe" },
+      cover: "assets/airbnb-bedroom.jpg",
+      comparison: true,
+      before: "assets/handyman-before-matched.jpg",
+      after: "assets/airbnb-bedroom.jpg",
+      title: { hu: "Apró hibákból rendezett átadás", de: "Aus kleinen Mängeln wurde eine ordentliche Übergabe" },
+      location: { hu: "Soproni bérlemény", de: "Mietobjekt in Sopron" },
+      timeline: { hu: "átadás előtti javítás", de: "Reparaturen vor der Übergabe" },
+      client: { hu: "tulajdonos / kezelő", de: "Eigentümer/Manager" },
+      summary: {
+        hu:
+          "A kisebb hibák külön-külön nem tűnnek súlyosnak, de együtt azt sugallják, hogy az ingatlan nincs kézben tartva.",
+        de:
+          "Kleine Mängel sehen einzeln vielleicht nicht schwerwiegend aus, aber in ihrer Gesamtheit deuten sie darauf hin, dass die Immobilie nicht ordnungsgemäß verwaltet wird.",
+      },
+      problem: {
+        hu:
+          "Karnis, polc, fogantyú, szegély vagy ajtóigazítás jellegű apróságok gyűltek össze. Ezek átadásnál vagy fotózásnál erősen látszanak.",
+        de:
+          "Kleine Elemente wie Stangen, Regale, Griffe, Leisten oder Türanpassungen hatten sich angesammelt. Diese Details fallen bei der Übergabe oder bei Fotoaufnahmen auf.",
+      },
+      approach: {
+        hu:
+          "A munkát listázzuk, majd egy körben kezeljük a kisebb hibákat. Így a tulajdonos nem veszít időt sok külön egyeztetéssel.",
+        de:
+          "Die Punkte werden in einer einzigen fokussierten Begehung erfasst und erledigt, sodass der Eigentümer nicht mehrere kleine Aufgaben koordinieren muss.",
+      },
+      result: {
+        hu:
+          "Az ingatlan rendezettebb és átadhatóbb lett, a javítások pedig követhető listában szerepelnek.",
+        de:
+          "Die Immobilie wird aufgeräumter und leichter zu übergeben, wobei die abgeschlossenen Arbeiten in einer übersichtlichen Liste dokumentiert werden.",
+      },
+      works: {
+        hu: ["javítási lista", "kisebb rögzítések", "ajtó és szegély igazítás", "látható hibák kezelése", "fotós visszajelzés"],
+        de: ["Reparaturliste", "Kleine Reparaturen", "Anpassungen an Türen und Leisten", "Behebung sichtbarer Mängel", "Foto-Update"],
+      },
+      evidence: {
+        hu: ["feladatlista", "munkafolyamat képek", "kész állapot", "átadásra alkalmasabb tér"],
+        de: ["Aufgabenliste", "Arbeitsfotos", "Fertiger Zustand", "Mehr Übergabebereitschaft"],
+      },
+      metrics: [
+        { n: "1", hu: "szervezett kör", de: "Organisierter Termin" },
+        { n: "10", hu: "fotó", de: "Fotos" },
+        { n: "5+", hu: "tipikus apró hiba", de: "Typische kleine Mängel" },
+      ],
+      photos: services[3].photos,
+    }
+  );
+
+  projects.forEach((project) => {
+    project.description = project.description || project.summary;
+    project.images = project.images || project.photos || [];
+    project.photos = project.images;
+    project.videos = [];
+  });
+
+  const phaseCounts = (photos = []) =>
+    photos.reduce(
+      (counts, photo) => {
+        counts[photo[1]] += 1;
+        return counts;
+      },
+      { before: 0, process: 0, after: 0 }
+    );
+
+
+  const problemDetails = [
+    {
+      service: { hu: "Ingatlankarbantartás", de: "Immobilienpflege" },
+      href: "property-maintenance-sopron.html",
+      projectIndex: 0,
+      next: {
+        hu: "Küldjön néhány áttekintő fotót, a soproni címet vagy környéket és azt, hogyan lehet bejutni az ingatlanba. Így gyorsan látható, hogy fotók alapján elindítható-e a feladat.",
+        de: "Senden Sie ein paar Übersichtsaufnahmen, die Soproner Adresse und die Zugangsinformationen. So wird klar, ob die Aufgabe anhand von Fotos starten kann oder eine Besichtigung vor Ort braucht.",
+      },
+    },
+    {
+      service: { hu: "Takarítás és karbantartás", de: "Reinigung und Instandhaltung" },
+      href: "cleaning-services-sopron.html",
+      projectIndex: 3,
+      next: {
+        hu: "Írja meg a következő vendég érkezési idejét, küldjön fotókat a látható hibákról, és jelölje meg, mi számít sürgősnek.",
+        de: "Teilen Sie die nächste Gästeankunft mit, senden Sie Fotos der sichtbaren Punkte und markieren Sie, was dringend ist.",
+      },
+    },
+    {
+      service: { hu: "Festés és faljavítás", de: "Malerarbeiten und Wandreparaturen" },
+      href: "painting-wall-repairs-sopron.html",
+      projectIndex: 0,
+      next: {
+        hu: "Küldjön képeket a falhibákról, a helyiségről és az átadási határidőről. Ebből eldönthető, javítófestés vagy nagyobb frissítés indokolt-e.",
+        de: "Senden Sie Fotos der Wandmängel, des Raums und der Übergabefrist. Danach lässt sich klären, ob Ausbesserungsanstrich oder eine umfassendere Auffrischung sinnvoll ist.",
+      },
+    },
+    {
+      service: { hu: "Ezermester és ingatlankarbantartás", de: "Hausmeisterservice und Immobilieninstandhaltung" },
+      href: "handyman-services-sopron.html",
+      projectIndex: 5,
+      next: {
+        hu: "Készítsen rövid listát a hibákról, mellékeljen fotókat, és írja le, ki tudja jóváhagyni az esetleges változásokat.",
+        de: "Erstellen Sie eine kurze Aufgabenliste, fügen Sie Fotos hinzu und nennen Sie, wer Änderungen am Umfang freigeben kann.",
+      },
+    },
+    {
+      service: { hu: "Kertfenntartás", de: "Gartenpflege" },
+      href: "garden-maintenance-sopron.html",
+      projectIndex: 2,
+      next: {
+        hu: "Küldjön kültéri fotókat, jelölje meg a hozzáférést és az időjárástól függő határidőt. Így reális ütemezést lehet adni.",
+        de: "Senden Sie Außenfotos, Zugangsinformationen und wetterabhängige Fristen. So lässt sich ein realistischer Zeitplan festlegen.",
+      },
+    },
+    {
+      service: { hu: "Festés, faljavítás és szerelés", de: "Malerarbeiten, Wandreparaturen und Montagen" },
+      href: "painting-wall-repairs-sopron.html",
+      projectIndex: 4,
+      next: {
+        hu: "Küldjön fotókat a látogatás előtt zavaró részletekről, a működési időről és a belépési szabályokról. Így diszkréten ütemezhető a munka.",
+        de: "Senden Sie Fotos der Details, die vor dem Besuch wichtig sind, sowie Betriebszeiten und Zugangsregeln. Die Arbeit kann dann diskret eingeplant werden.",
+      },
+    },
+  ];
+
+
+  const projectCarousel = (item, index, mode = "card") => {
+    const id = `${mode}-${index}`;
+    const isModal = mode === "modal";
+    const images = item.images || [];
+    return `
+      <div class="project-carousel ${isModal ? "large" : "compact"}" data-carousel="${id}" data-project-index="${index}" data-carousel-action="${isModal ? "gallery" : "project"}" data-active="0" data-phase="all">
+        <div class="carousel-head">
+          <strong>${state.lang === "hu" ? "Illusztratív képsorozat" : "Beispielhafte Bilderserie"}</strong>
+          <span data-carousel-count aria-live="polite">${images.length} ${state.lang === "hu" ? "kép" : "Bilder"}</span>
+        </div>
+        <div class="carousel-stage">
+          <button class="carousel-arrow carousel-prev" type="button" data-carousel-prev="${id}" aria-label="${state.lang === "hu" ? "Előző kép" : "Vorheriges Bild"}">‹</button>
+          <div class="carousel-viewport">
+            <div class="carousel-track">
+              ${images.map((p, i) => `<button class="carousel-slide" type="button" data-slide="${i}" data-phase="${p[1]}"><img src="${img(p[0], isModal ? 1100 : 520)}" alt="${photoCaption(p)}" loading="${isModal && i === 0 ? "eager" : "lazy"}" decoding="async"><span class="slide-caption"><b>${phaseText(p[1])}</b><span>${photoCaption(p)}</span></span></button>`).join("")}
+            </div>
+          </div>
+          <button class="carousel-arrow carousel-next" type="button" data-carousel-next="${id}" aria-label="${state.lang === "hu" ? "Következő kép" : "Nächstes Bild"}">›</button>
+        </div>
+        <div class="carousel-thumbs">
+          ${images.map((p, i) => `<button type="button" data-carousel-dot="${id}" data-slide-to="${i}" data-phase="${p[1]}" aria-label="${phaseText(p[1])} ${i + 1}: ${photoCaption(p)}"><img src="${img(p[0], 180)}" alt="" loading="lazy" decoding="async"></button>`).join("")}
+        </div>
+      </div>`;
   };
 
-  const applyMaintenanceLink = () => {
-    const nav = document.querySelector(".header .nav");
-    if (!nav) return;
 
-    const lang = homeLang();
-    const label = lang === "hu" ? "Karbantartás" : "Instandhaltung";
-    const existing = nav.querySelector("[data-maintenance-link]");
-
-    if (existing) {
-      if (existing.textContent !== label) existing.textContent = label;
-      return;
-    }
-
-    const link = document.createElement("a");
-    link.href = "property-maintenance-sopron.html";
-    link.dataset.maintenanceLink = "true";
-    link.textContent = label;
-
-    const servicesLink = nav.querySelector('a[href="#services"]');
-    if (servicesLink) {
-      servicesLink.insertAdjacentElement("afterend", link);
-    } else {
-      nav.appendChild(link);
-    }
-  };
-
-  const applyHandymanLink = () => {
-    const nav = document.querySelector(".header .nav");
-    if (!nav) return;
-
-    const lang = homeLang();
-    const label = lang === "hu" ? "Ezermester" : "Hausmeisterservice";
-    const existing =
-      nav.querySelector("[data-handyman-link]") ||
-      nav.querySelector('a[href="handyman-services-sopron.html"]');
-
-    if (existing) {
-      if (existing.textContent !== label) existing.textContent = label;
-      return;
-    }
-
-    const link = document.createElement("a");
-    link.href = "handyman-services-sopron.html";
-    link.dataset.handymanLink = "true";
-    link.textContent = label;
-
-    const gardenLink =
-      nav.querySelector("[data-garden-link]") ||
-      nav.querySelector('a[href="garden-maintenance-sopron.html"]');
-    const paintingLink =
-      nav.querySelector("[data-painting-link]") ||
-      nav.querySelector('a[href="painting-wall-repairs-sopron.html"]');
-    const maintenanceLink = nav.querySelector("[data-maintenance-link]");
-    if (gardenLink) {
-      gardenLink.insertAdjacentElement("afterend", link);
-    } else if (paintingLink) {
-      paintingLink.insertAdjacentElement("afterend", link);
-    } else if (maintenanceLink) {
-      maintenanceLink.insertAdjacentElement("afterend", link);
-    } else {
-      const servicesLink = nav.querySelector('a[href="#services"]');
-      if (servicesLink) {
-        servicesLink.insertAdjacentElement("afterend", link);
-      } else {
-        nav.appendChild(link);
-      }
-    }
-  };
-
-  const applyPaintingLink = () => {
-    const nav = document.querySelector(".header .nav");
-    if (!nav) return;
-
-    const lang = homeLang();
-    const label = lang === "hu" ? "Festés és faljavítás" : "Malerarbeiten & Wandreparaturen";
-    const existing = nav.querySelector("[data-painting-link]") || nav.querySelector('a[href="painting-wall-repairs-sopron.html"]');
-
-    if (existing) {
-      if (existing.textContent !== label) existing.textContent = label;
-      return;
-    }
-
-    const link = document.createElement("a");
-    link.href = "painting-wall-repairs-sopron.html";
-    link.dataset.paintingLink = "true";
-    link.textContent = label;
-
-    const maintenanceLink = nav.querySelector("[data-maintenance-link]");
-    if (maintenanceLink) {
-      maintenanceLink.insertAdjacentElement("afterend", link);
-    } else {
-      const servicesLink = nav.querySelector('a[href="#services"]');
-      if (servicesLink) {
-        servicesLink.insertAdjacentElement("afterend", link);
-      } else {
-        nav.appendChild(link);
-      }
-    }
-  };
-
-  const applyGardenLink = () => {
-    const nav = document.querySelector(".header .nav");
-    if (!nav) return;
-
-    const lang = homeLang();
-    const label = lang === "hu" ? "Kertfenntartás" : "Gartenpflege";
-    const existing = nav.querySelector("[data-garden-link]") || nav.querySelector('a[href="garden-maintenance-sopron.html"]');
-
-    if (existing) {
-      if (existing.textContent !== label) existing.textContent = label;
-      return;
-    }
-
-    const link = document.createElement("a");
-    link.href = "garden-maintenance-sopron.html";
-    link.dataset.gardenLink = "true";
-    link.textContent = label;
-
-    const paintingLink =
-      nav.querySelector("[data-painting-link]") ||
-      nav.querySelector('a[href="painting-wall-repairs-sopron.html"]');
-    const maintenanceLink = nav.querySelector("[data-maintenance-link]");
-    if (paintingLink) {
-      paintingLink.insertAdjacentElement("afterend", link);
-    } else if (maintenanceLink) {
-      maintenanceLink.insertAdjacentElement("afterend", link);
-    } else {
-      const servicesLink = nav.querySelector('a[href="#services"]');
-      if (servicesLink) {
-        servicesLink.insertAdjacentElement("afterend", link);
-      } else {
-        nav.appendChild(link);
-      }
-    }
-  };
-
-  const applyCleaningLink = () => {
-    const nav = document.querySelector(".header .nav");
-    if (!nav) return;
-
-    const lang = homeLang();
-    const label = lang === "hu" ? "Takarítás" : "Reinigung";
-    const existing =
-      nav.querySelector("[data-cleaning-link]") ||
-      nav.querySelector('a[href="cleaning-services-sopron.html"]');
-
-    if (existing) {
-      if (existing.textContent !== label) existing.textContent = label;
-      return;
-    }
-
-    const link = document.createElement("a");
-    link.href = "cleaning-services-sopron.html";
-    link.dataset.cleaningLink = "true";
-    link.textContent = label;
-
-    const handymanLink =
-      nav.querySelector("[data-handyman-link]") ||
-      nav.querySelector('a[href="handyman-services-sopron.html"]');
-    const gardenLink =
-      nav.querySelector("[data-garden-link]") ||
-      nav.querySelector('a[href="garden-maintenance-sopron.html"]');
-    const paintingLink =
-      nav.querySelector("[data-painting-link]") ||
-      nav.querySelector('a[href="painting-wall-repairs-sopron.html"]');
-    const maintenanceLink = nav.querySelector("[data-maintenance-link]");
-
-    if (handymanLink) {
-      handymanLink.insertAdjacentElement("beforebegin", link);
-    } else if (gardenLink) {
-      gardenLink.insertAdjacentElement("afterend", link);
-    } else if (paintingLink) {
-      paintingLink.insertAdjacentElement("afterend", link);
-    } else if (maintenanceLink) {
-      maintenanceLink.insertAdjacentElement("afterend", link);
-    } else {
-      const servicesLink = nav.querySelector('a[href="#services"]');
-      if (servicesLink) {
-        servicesLink.insertAdjacentElement("afterend", link);
-      } else {
-        nav.appendChild(link);
-      }
-    }
-  };
-
-  const applyHomeEnhancements = () => {
-    applySituationImages();
-    applyMaintenanceLink();
-    applyPaintingLink();
-    applyGardenLink();
-    applyCleaningLink();
-    applyHandymanLink();
+  const openProject = (index) => {
+    const item = projects[index];
+    const images = item.images || [];
+    const counts = phaseCounts(images);
+    state.projectIndex = index;
+    document.getElementById("projectInner").innerHTML = `
+      <div class="project-layout" data-project-index="${index}">
+        <div>
+          ${
+            hasProjectComparison(item)
+              ? `${compareMarkup(item, { id: "compare", hintId: "compareHint" })}
+          <button class="btn compare-fullscreen-btn" type="button" data-full-comparison="${index}">${compareText("viewFullComparison")}</button>`
+              : `<div class="case-preview single-image modal-single-preview"><img src="${img(item.cover, 1400)}" alt="${tx(item.title)}" loading="eager" decoding="async"><span class="inspect-icon" aria-hidden="true"></span></div>`
+          }
+          <div class="phase-filter">
+            <button class="active" data-phase-filter="all">${state.lang === "hu" ? "Összes kép" : "Alle Fotos"}</button>
+            <button data-phase-filter="before">${tx(phaseLabel.before)} (${counts.before})</button>
+            <button data-phase-filter="process">${tx(phaseLabel.process)} (${counts.process})</button>
+            <button data-phase-filter="after">${tx(phaseLabel.after)} (${counts.after})</button>
+          </div>
+          ${projectCarousel(item, index, "modal")}
+        </div>
+        <div class="details">
+          <small class="eyebrow">${tx(item.type)}</small>
+          <h2 id="projectModalTitle">${tx(item.title)}</h2>
+          <p class="example-badge">${state.lang === "hu" ? "Illusztratív példa, nem saját referenciaprojekt." : "Illustratives Beispiel, kein abgeschlossenes Kundenprojekt."}</p>
+          <div class="project-meta-line">
+            <span>${tx(item.location)}</span>
+            <span>${tx(item.timeline)}</span>
+            <span>${tx(item.client)}</span>
+          </div>
+          <p>${tx(item.description)}</p>
+          <div class="project-metrics">
+            ${item.metrics.map((metric) => `<div><b>${typeof metric.n === "object" ? tx(metric.n) : metric.n}</b><small>${state.lang === "hu" ? metric.hu : metric.de}</small></div>`).join("")}
+          </div>
+          <div class="story-grid">
+            <article class="story-card"><strong>${state.lang === "hu" ? "Kiinduló helyzet" : "Ausgangssituation"}</strong><p>${tx(item.problem)}</p></article>
+            <article class="story-card"><strong>${state.lang === "hu" ? "Megközelítés" : "Vorgehen"}</strong><p>${tx(item.approach)}</p></article>
+            <article class="story-card"><strong>${state.lang === "hu" ? "Végeredmény" : "Endergebnis"}</strong><p>${tx(item.result)}</p></article>
+          </div>
+          <div class="evidence-list">
+            ${tx(item.evidence).map((entry) => `<span class="evidence-chip">${entry}</span>`).join("")}
+          </div>
+          <h3>${state.lang === "hu" ? "Jellemző munkalépések" : "Typische Arbeitsschritte"}</h3>
+          <ul>${tx(item.works).map((work) => `<li>${work}</li>`).join("")}</ul>
+          <div class="result"><strong>${state.lang === "hu" ? "Várható eredmény" : "Erwartetes Ergebnis"}</strong><p>${tx(item.result)}</p></div>
+          <div class="section-cta"><a class="btn primary" href="${tel}" data-phone-action>${phoneActionLabel()}</a></div>
+        </div>
+      </div>`;
     applyPageLanguage();
-    bindHeroLightbox();
-    bindPaintReveal();
-    bindConversionActionTracking();
-    // Only render/bind the quote form once the DOM is final (see homeCoreReady
-    // above) so a visitor can never interact with a form that is about to be
-    // destroyed by script-core.js's document.body.innerHTML replacement.
-    if (homeCoreReady) bindQuoteForms();
+    const modal = document.getElementById("projectModal");
+    modal.setAttribute("aria-labelledby", "projectModalTitle");
+    openModal(modal);
+    const compare = document.getElementById("compare");
+    initCompare(compare);
+    document.querySelector("[data-full-comparison]")?.addEventListener("click", () => openFullComparison(index));
+    document.querySelectorAll("[data-phase-filter]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-phase-filter]").forEach((item) => item.classList.remove("active"));
+        btn.classList.add("active");
+        const phase = btn.dataset.phaseFilter;
+        showCarousel(`modal-${index}`, 0, phase);
+      });
+    });
+    initCarousels(document.getElementById("projectModal"));
   };
 
-  const scheduleHomeEnhancements = () => {
-    if (scheduled) return;
-    scheduled = true;
-    requestAnimationFrame(() => {
-      scheduled = false;
-      applyHomeEnhancements();
+  const openFullComparison = (index) => {
+    const item = projects[index];
+    if (!hasProjectComparison(item)) return;
+    state.projectIndex = index;
+    document.getElementById("galleryInner").innerHTML = `
+      <div class="gallery-layout comparison-lightbox-layout">
+        <div class="gallery-main comparison-main">
+          ${compareMarkup(item, { id: "fullCompare", hintId: "fullCompareHint", className: "compare-large" })}
+        </div>
+        <aside class="gallery-info comparison-info">
+          <small class="eyebrow">${tx(item.title)}</small>
+          <h2 id="galleryModalTitle">${compareText("fullComparisonTitle")}</h2>
+          <p>${compareText("fullComparisonDescription")}</p>
+          <div class="comparison-key">
+            <span><b>${compareText("compareBefore")}</b>${photoCaption([item.before, "before", { hu: `${tx(item.title)} - kiinduló állapot`, de: `${tx(item.title)} - Ausgangszustand` }])}</span>
+            <span><b>${compareText("compareAfter")}</b>${photoCaption([item.after, "after", { hu: `${tx(item.title)} - kész állapot`, de: `${tx(item.title)} - fertiggestellter Zustand` }])}</span>
+          </div>
+        </aside>
+      </div>`;
+    applyPageLanguage();
+    const modal = document.getElementById("galleryModal");
+    modal.dataset.galleryMode = "comparison";
+    modal.setAttribute("aria-labelledby", "galleryModalTitle");
+    openModal(modal);
+    const compare = document.getElementById("fullCompare");
+    initCompare(compare);
+    compare?.focus({ preventScroll: true });
+  };
+
+  const setComparePosition = (compare, value) => {
+    const next = Math.max(0, Math.min(100, Number(value)));
+    compare.style.setProperty("--split", `${next}%`);
+    const rounded = String(Math.round(next));
+    if (compare.getAttribute("aria-valuenow") !== rounded) {
+      compare.setAttribute("aria-valuenow", rounded);
+      compare.setAttribute("aria-valuetext", compareValueText(next));
+    }
+  };
+
+  let activeCompareDrag = null;
+  let compareFrame = 0;
+  let comparePendingClientX = 0;
+  let compareDocumentListenersBound = false;
+  let compareTouchFallbackListenersBound = false;
+  let activeCompareTouch = null;
+
+  const comparePercentFromClientX = (state, clientX) => {
+    if (!state?.rect?.width) return 50;
+    return ((clientX - state.rect.left) / state.rect.width) * 100;
+  };
+
+  const renderCompareFromClientX = (state, clientX) => {
+    if (!state?.compare) return;
+    setComparePosition(state.compare, comparePercentFromClientX(state, clientX));
+  };
+
+  const scheduleCompareRender = (clientX) => {
+    if (!activeCompareDrag) return;
+    comparePendingClientX = clientX;
+    if (compareFrame) return;
+    compareFrame = requestAnimationFrame(() => {
+      compareFrame = 0;
+      if (!activeCompareDrag) return;
+      renderCompareFromClientX(activeCompareDrag, comparePendingClientX);
     });
   };
 
-  const observeHome = () => {
-    applyHomeEnhancements();
-
-    new MutationObserver(scheduleHomeEnhancements).observe(document.documentElement, {
-      childList: true,
-      subtree: true,
+  const findCompareAtPoint = (event) => {
+    const directCompare = event.target?.closest?.("[data-compare]");
+    if (directCompare) return directCompare;
+    const candidates = [...document.querySelectorAll("[data-compare]")].filter((compare) => {
+      const rect = compare.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
     });
+    return candidates.at(-1) || null;
   };
 
-  const loadCoreScript = () => {
-    const script = document.createElement("script");
-    const coreSource = new URL("script-core.js", scriptBaseUrl);
-    coreSource.search = `?v=${assetBuildId}`;
-    script.src = coreSource.href;
-    script.async = false;
-    script.onload = applyHomeEnhancements;
-    script.onerror = () => {
-      console.error("Sopron Property Services core script could not be loaded.");
-      // script-core.js will never run its render() (and therefore never replace
-      // document.body) if it failed to load, so there is no destructive-swap
-      // race left to protect against: it is safe to bind the quote form against
-      // the static fallback markup as a last resort so the contact form still
-      // works.
-      homeCoreReady = true;
-      applyHomeEnhancements();
+  const releaseComparePointerCapture = (state, event) => {
+    try {
+      const pointerId = event?.pointerId ?? state?.pointerId;
+      if (state?.compare && pointerId !== undefined && state.compare.hasPointerCapture?.(pointerId)) {
+        state.compare.releasePointerCapture(pointerId);
+      }
+    } catch {
+      // Pointer capture may already have been released by the browser.
+    }
+  };
+
+  const finishCompareDrag = (event, { finalUpdate = false } = {}) => {
+    if (!activeCompareDrag) return;
+    if (event?.pointerId !== undefined && event.pointerId !== activeCompareDrag.pointerId) return;
+    const state = activeCompareDrag;
+    if (finalUpdate && event?.clientX !== undefined) renderCompareFromClientX(state, event.clientX);
+    if (compareFrame) {
+      cancelAnimationFrame(compareFrame);
+      compareFrame = 0;
+    }
+    releaseComparePointerCapture(state, event);
+    state.compare.classList.remove("is-dragging");
+    activeCompareDrag = null;
+  };
+
+  const handleComparePointerMove = (event) => {
+    if (!activeCompareDrag || event.pointerId !== activeCompareDrag.pointerId) return;
+    if (activeCompareDrag.touchIntent === "pending") {
+      const dx = event.clientX - activeCompareDrag.startX;
+      const dy = event.clientY - activeCompareDrag.startY;
+      if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+        setComparePosition(activeCompareDrag.compare, activeCompareDrag.startValue);
+        finishCompareDrag(event);
+        return;
+      }
+      if (Math.abs(dx) >= Math.abs(dy)) activeCompareDrag.touchIntent = "drag";
+    }
+    scheduleCompareRender(event.clientX);
+  };
+
+  const handleComparePointerEnd = (event) => {
+    finishCompareDrag(event, { finalUpdate: event.type === "pointerup" });
+  };
+
+  const handleComparePointerDown = (event) => {
+    const compare = findCompareAtPoint(event);
+    if (!compare) return;
+    startCompareDrag(compare, event);
+  };
+
+  const bindCompareDocumentListeners = () => {
+    if (compareDocumentListenersBound) return;
+    compareDocumentListenersBound = true;
+    document.addEventListener("pointerdown", handleComparePointerDown, true);
+    document.addEventListener("pointermove", handleComparePointerMove);
+    document.addEventListener("pointerup", handleComparePointerEnd);
+    document.addEventListener("pointercancel", handleComparePointerEnd);
+    document.addEventListener("lostpointercapture", handleComparePointerEnd, true);
+    window.addEventListener("blur", () => finishCompareDrag());
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") finishCompareDrag();
+    });
+    window.addEventListener("resize", () => finishCompareDrag());
+    window.addEventListener("orientationchange", () => finishCompareDrag());
+  };
+
+  const startCompareDrag = (compare, event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (event.isPrimary === false) return;
+    finishCompareDrag();
+
+    const rect = compare.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    activeCompareDrag = {
+      compare,
+      pointerId: event.pointerId,
+      pointerType: event.pointerType || "mouse",
+      rect,
+      startX: event.clientX,
+      startY: event.clientY,
+      startValue: Number(compare.getAttribute("aria-valuenow")) || 50,
+      touchIntent: event.pointerType && event.pointerType !== "mouse" ? "pending" : "drag"
     };
-    document.head.appendChild(script);
+    compare.classList.add("is-dragging");
+    compare.focus({ preventScroll: true });
+    try {
+      compare.setPointerCapture?.(event.pointerId);
+    } catch {
+      // Some browsers can deny capture during interrupted gestures.
+    }
+    renderCompareFromClientX(activeCompareDrag, event.clientX);
   };
 
-  window.BPS_I18N.afterHomeRender = () => {
-    homeCoreReady = true;
-    applyHomeEnhancements();
+  const findCompareTouch = (touches, identifier) => [...touches].find((touch) => touch.identifier === identifier);
+
+  const finishCompareTouch = (event, { finalUpdate = false } = {}) => {
+    if (!activeCompareTouch) return;
+    const state = activeCompareTouch;
+    const touch = event ? findCompareTouch(event.changedTouches || [], state.identifier) : null;
+    if (finalUpdate && touch) renderCompareFromClientX(state, touch.clientX);
+    if (compareFrame) {
+      cancelAnimationFrame(compareFrame);
+      compareFrame = 0;
+    }
+    state.compare.classList.remove("is-dragging");
+    activeCompareTouch = null;
+  };
+
+  const bindCompareTouchFallbackListeners = () => {
+    if (compareTouchFallbackListenersBound) return;
+    compareTouchFallbackListenersBound = true;
+    document.addEventListener(
+      "touchmove",
+      (event) => {
+        if (!activeCompareTouch) return;
+        const touch = findCompareTouch(event.changedTouches, activeCompareTouch.identifier) || findCompareTouch(event.touches, activeCompareTouch.identifier);
+        if (!touch) return;
+        const dx = touch.clientX - activeCompareTouch.startX;
+        const dy = touch.clientY - activeCompareTouch.startY;
+        if (activeCompareTouch.touchIntent === "pending") {
+          if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+            setComparePosition(activeCompareTouch.compare, activeCompareTouch.startValue);
+            finishCompareTouch();
+            return;
+          }
+          if (Math.abs(dx) >= Math.abs(dy)) activeCompareTouch.touchIntent = "drag";
+        }
+        if (event.cancelable && Math.abs(dx) >= Math.abs(dy)) event.preventDefault();
+        comparePendingClientX = touch.clientX;
+        if (compareFrame) return;
+        compareFrame = requestAnimationFrame(() => {
+          compareFrame = 0;
+          if (!activeCompareTouch) return;
+          renderCompareFromClientX(activeCompareTouch, comparePendingClientX);
+        });
+      },
+      { passive: false }
+    );
+    document.addEventListener("touchend", (event) => finishCompareTouch(event, { finalUpdate: true }), { passive: true });
+    document.addEventListener("touchcancel", (event) => finishCompareTouch(event), { passive: true });
+    window.addEventListener("blur", () => finishCompareTouch());
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") finishCompareTouch();
+    });
+    window.addEventListener("resize", () => finishCompareTouch());
+    window.addEventListener("orientationchange", () => finishCompareTouch());
+  };
+
+  const startCompareTouchFallback = (compare, event) => {
+    if (activeCompareTouch) finishCompareTouch();
+    if (event.changedTouches.length !== 1) return;
+    const touch = event.changedTouches[0];
+    const rect = compare.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    activeCompareTouch = {
+      compare,
+      identifier: touch.identifier,
+      rect,
+      startX: touch.clientX,
+      startY: touch.clientY,
+      startValue: Number(compare.getAttribute("aria-valuenow")) || 50,
+      touchIntent: "pending"
+    };
+    compare.classList.add("is-dragging");
+    compare.focus({ preventScroll: true });
+    renderCompareFromClientX(activeCompareTouch, touch.clientX);
+  };
+
+  const initCompare = (compare) => {
+    if (compare.dataset.bound === "true") return;
+    compare.dataset.bound = "true";
+    if (window.PointerEvent) {
+      bindCompareDocumentListeners();
+    } else {
+      bindCompareTouchFallbackListeners();
+      compare.addEventListener(
+        "touchstart",
+        (event) => startCompareTouchFallback(compare, event),
+        { passive: true }
+      );
+    }
+    compare.addEventListener("keydown", (event) => {
+      const current = Number(compare.getAttribute("aria-valuenow")) || 50;
+      const step = event.shiftKey ? 5 : 1;
+      const values = {
+        ArrowLeft: current - step,
+        ArrowDown: current - step,
+        ArrowRight: current + step,
+        ArrowUp: current + step,
+        PageDown: current - 10,
+        PageUp: current + 10,
+        Home: 0,
+        End: 100
+      };
+      if (!(event.key in values)) return;
+      event.preventDefault();
+      setComparePosition(compare, values[event.key]);
+    });
+    setComparePosition(compare, 50);
+    requestAnimationFrame(() => compare.classList.add("is-ready"));
+  };
+
+  const initCarousels = (root = document) => {
+    root.querySelectorAll("[data-carousel]").forEach((carousel) => {
+      if (carousel.dataset.bound === "true") return;
+      carousel.dataset.bound = "true";
+      const id = carousel.dataset.carousel;
+      carousel.querySelectorAll("[data-carousel-prev]").forEach((btn) => btn.addEventListener("click", () => moveCarousel(id, -1)));
+      carousel.querySelectorAll("[data-carousel-next]").forEach((btn) => btn.addEventListener("click", () => moveCarousel(id, 1)));
+      carousel.querySelectorAll("[data-carousel-dot]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const imageIndex = Number(btn.dataset.slideTo);
+          if (carousel.dataset.carouselAction === "gallery") {
+            const project = projects[Number(carousel.dataset.projectIndex)];
+            openGallery(project.images, imageIndex, tx(project.title));
+            return;
+          }
+          showCarousel(id, imageIndex);
+        });
+      });
+      carousel.querySelectorAll("[data-slide]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const project = projects[Number(carousel.dataset.projectIndex)];
+          if (carousel.dataset.carouselAction === "gallery") {
+            openGallery(project.images, Number(btn.dataset.slide), tx(project.title));
+            return;
+          }
+          openProject(Number(carousel.dataset.projectIndex));
+        });
+      });
+      const viewport = carousel.querySelector(".carousel-viewport");
+      let startX = 0;
+      let lastX = 0;
+      let dragging = false;
+      viewport.addEventListener("pointerdown", (event) => {
+        dragging = true;
+        startX = event.clientX;
+        lastX = event.clientX;
+      });
+      viewport.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        lastX = event.clientX;
+      });
+      const finishDrag = () => {
+        if (!dragging) return;
+        const delta = lastX - startX;
+        dragging = false;
+        if (Math.abs(delta) > 42) {
+          moveCarousel(id, delta < 0 ? 1 : -1);
+        }
+      };
+      viewport.addEventListener("pointerup", finishDrag);
+      viewport.addEventListener("pointercancel", finishDrag);
+      showCarousel(id, Number(carousel.dataset.active || 0));
+    });
+  };
+
+  const moveCarousel = (id, direction) => {
+    const carousel = document.querySelector(`[data-carousel="${id}"]`);
+    if (!carousel) return;
+    showCarousel(id, Number(carousel.dataset.active || 0) + direction);
+  };
+
+  const showCarousel = (id, index, phase) => {
+    const carousel = document.querySelector(`[data-carousel="${id}"]`);
+    if (!carousel) return;
+    if (phase) carousel.dataset.phase = phase;
+    const activePhase = carousel.dataset.phase || "all";
+    const slides = [...carousel.querySelectorAll("[data-slide]")];
+    const thumbs = [...carousel.querySelectorAll("[data-carousel-dot]")];
+    slides.forEach((slide) => {
+      slide.hidden = activePhase !== "all" && slide.dataset.phase !== activePhase;
+    });
+    thumbs.forEach((thumb) => {
+      thumb.hidden = activePhase !== "all" && thumb.dataset.phase !== activePhase;
+    });
+    const visibleSlides = slides.filter((slide) => !slide.hidden);
+    const visibleThumbs = thumbs.filter((thumb) => !thumb.hidden);
+    if (!visibleSlides.length) return;
+    const active = ((index % visibleSlides.length) + visibleSlides.length) % visibleSlides.length;
+    carousel.dataset.active = String(active);
+    carousel.querySelector(".carousel-track").style.transform = `translateX(-${active * 100}%)`;
+    slides.forEach((slide) => {
+      const isActive = slide === visibleSlides[active];
+      slide.classList.toggle("active", isActive);
+      slide.tabIndex = isActive ? 0 : -1;
+      slide.setAttribute("aria-hidden", String(!isActive));
+    });
+    thumbs.forEach((thumb) => {
+      const isActive = thumb === visibleThumbs[active];
+      thumb.classList.toggle("active", isActive);
+      thumb.setAttribute("aria-current", isActive ? "true" : "false");
+    });
+    const counter = carousel.querySelector("[data-carousel-count]");
+    if (counter) counter.textContent = `${active + 1} / ${visibleSlides.length}`;
+  };
+
+  const openGallery = (photos, index, title) => {
+    state.gallery = photos;
+    state.galleryIndex = index;
+    document.getElementById("galleryInner").innerHTML = `
+      <div class="gallery-layout">
+        <div class="gallery-main" id="galleryStage">
+          <div class="gallery-viewport" id="galleryViewport">
+            <img id="galleryImg" src="" alt="${title}" draggable="false">
+          </div>
+          <button class="arrow prev" id="prev" type="button" aria-label="${state.lang === "hu" ? "Előző kép" : "Vorheriges Bild"}">‹</button>
+          <button class="arrow next" id="next" type="button" aria-label="${state.lang === "hu" ? "Következő kép" : "Nächstes Bild"}">›</button>
+          <span class="counter" id="counter" aria-live="polite"></span>
+          <div class="gallery-caption" id="galleryCaption"></div>
+          <div class="gallery-tools" role="toolbar" aria-label="${state.lang === "hu" ? "Kép nagyítása" : "Bildzoom-Steuerung"}">
+            <button type="button" data-gallery-zoom="out" aria-label="${state.lang === "hu" ? "Kicsinyítés" : "Verkleinern"}">−</button>
+            <button type="button" class="zoom-level" data-gallery-zoom="reset" aria-label="${state.lang === "hu" ? "Eredeti nagyítás" : "Zoom zurücksetzen"}">100%</button>
+            <button type="button" data-gallery-zoom="in" aria-label="${state.lang === "hu" ? "Nagyítás" : "Vergrößern"}">+</button>
+          </div>
+        </div>
+        <aside class="gallery-info">
+          <small class="eyebrow">${title}</small>
+          <h2 id="galleryModalTitle">${state.lang === "hu" ? "Képes munkafolyamat" : "Visueller Arbeitsablauf"}</h2>
+          <p>${state.lang === "hu" ? "Lapozzon a képek között, húzza oldalra mobilon, vagy nagyítsa ki a részleteket. A képek illusztratív példák; a konkrét feladatot mindig a helyszín saját fotói alapján egyeztetjük." : "Blättern Sie mit den Pfeilen, wischen Sie auf dem Handy oder zoomen Sie für Details. Die Bilder sind illustrative Beispiele; der konkrete Umfang wird immer anhand der Fotos der jeweiligen Immobilie festgelegt."}</p>
+          <div class="thumb-grid" id="thumbs">${photos.map((p, i) => `<button type="button" data-thumb="${i}" aria-label="${photoCaption(p)}"><img src="${img(p[0], 420)}" alt="" loading="lazy" decoding="async"><span class="thumb-zoom" aria-hidden="true"></span></button>`).join("")}</div>
+        </aside>
+      </div>`;
+    applyPageLanguage();
+    const modal = document.getElementById("galleryModal");
+    modal.dataset.galleryMode = "gallery";
+    modal.setAttribute("aria-labelledby", "galleryModalTitle");
+    openModal(modal);
+    document.getElementById("prev").addEventListener("click", () => showGallery(state.galleryIndex - 1));
+    document.getElementById("next").addEventListener("click", () => showGallery(state.galleryIndex + 1));
+    document.querySelectorAll("#thumbs [data-thumb]").forEach((btn) => {
+      btn.addEventListener("click", () => showGallery(Number(btn.dataset.thumb)));
+    });
+    document.querySelectorAll("[data-gallery-zoom]").forEach((btn) => {
+      btn.addEventListener("click", () => changeGalleryZoom(btn.dataset.galleryZoom));
+    });
+    initGalleryInteraction(document.getElementById("galleryViewport"));
+    showGallery(index);
+  };
+
+  const showGallery = (index) => {
+    if (!state.gallery.length) return;
+    state.galleryIndex = (index + state.gallery.length) % state.gallery.length;
+    const current = state.gallery[state.galleryIndex];
+    const [id, phase] = current;
+    const galleryImg = document.getElementById("galleryImg");
+    const nextSrc = img(id, 2000);
+    if (galleryImg.src !== new URL(nextSrc, document.baseURI).href) galleryImg.src = nextSrc;
+    galleryImg.alt = photoCaption(current);
+    document.getElementById("counter").textContent = `${state.galleryIndex + 1} / ${state.gallery.length} - ${phaseText(phase)}`;
+    document.getElementById("galleryCaption").innerHTML = `<b>${phaseText(phase)}</b><span>${photoCaption(current)}</span>`;
+    document.querySelectorAll("#thumbs [data-thumb]").forEach((thumb, thumbIndex) => {
+      const isActive = thumbIndex === state.galleryIndex;
+      thumb.classList.toggle("active", isActive);
+      thumb.setAttribute("aria-current", isActive ? "true" : "false");
+    });
+    resetGalleryView();
+    preloadGalleryNeighbors();
+  };
+
+  const applyGalleryTransform = () => {
+    const image = document.getElementById("galleryImg");
+    const viewport = document.getElementById("galleryViewport");
+    if (!image || !viewport) return;
+    const maxX = Math.max(0, (viewport.clientWidth * (state.galleryZoom - 1)) / 2);
+    const maxY = Math.max(0, (viewport.clientHeight * (state.galleryZoom - 1)) / 2);
+    state.galleryPanX = Math.max(-maxX, Math.min(maxX, state.galleryPanX));
+    state.galleryPanY = Math.max(-maxY, Math.min(maxY, state.galleryPanY));
+    image.style.transform = `translate3d(${state.galleryPanX}px, ${state.galleryPanY}px, 0) scale(${state.galleryZoom})`;
+    viewport.classList.toggle("is-zoomed", state.galleryZoom > 1);
+    const level = document.querySelector(".zoom-level");
+    if (level) level.textContent = `${Math.round(state.galleryZoom * 100)}%`;
+  };
+
+  const setGalleryZoom = (zoom, originX = 0, originY = 0) => {
+    const previous = state.galleryZoom;
+    state.galleryZoom = Math.max(1, Math.min(4, Number(zoom)));
+    if (state.galleryZoom === 1) {
+      state.galleryPanX = 0;
+      state.galleryPanY = 0;
+    } else if (previous > 0 && previous !== state.galleryZoom) {
+      const ratio = state.galleryZoom / previous;
+      state.galleryPanX = state.galleryPanX * ratio + originX * (1 - ratio);
+      state.galleryPanY = state.galleryPanY * ratio + originY * (1 - ratio);
+    }
+    applyGalleryTransform();
+  };
+
+  const changeGalleryZoom = (action) => {
+    if (action === "reset") return setGalleryZoom(1);
+    setGalleryZoom(state.galleryZoom + (action === "in" ? 0.5 : -0.5));
+  };
+
+  const resetGalleryView = () => {
+    state.galleryZoom = 1;
+    state.galleryPanX = 0;
+    state.galleryPanY = 0;
+    applyGalleryTransform();
+  };
+
+  const preloadGalleryNeighbors = () => {
+    if (state.gallery.length < 2) return;
+    [-1, 1].forEach((offset) => {
+      const photo = state.gallery[(state.galleryIndex + offset + state.gallery.length) % state.gallery.length];
+      const preload = new Image();
+      preload.src = img(photo[0], 2000);
+    });
+  };
+
+  const activeModal = () => [...document.querySelectorAll(".modal.open")].at(-1) || null;
+
+  const openModal = (modal) => {
+    const previous = activeModal();
+    if (previous && previous !== modal) {
+      previous.setAttribute("aria-hidden", "true");
+      previous.setAttribute("inert", "");
+    }
+    modalOpeners.set(modal, document.activeElement);
+    modal.classList.add("open");
+    modal.removeAttribute("inert");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    const panel = modal.querySelector(".panel");
+    if (panel) panel.scrollTop = 0;
+    requestAnimationFrame(() => modal.querySelector(".close")?.focus());
+  };
+
+  const closeModal = (modal) => {
+    if (!modal) return;
+    const opener = modalOpeners.get(modal);
+    modal.classList.remove("open");
+    modal.removeAttribute("inert");
+    modal.setAttribute("aria-hidden", "true");
+    const previous = activeModal();
+    if (previous) {
+      previous.removeAttribute("inert");
+      previous.setAttribute("aria-hidden", "false");
+    } else {
+      document.body.classList.remove("modal-open");
+    }
+    if (opener?.isConnected) requestAnimationFrame(() => opener.focus());
+  };
+
+  const trapFocus = (event, modal) => {
+    const focusable = [...modal.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )].filter((element) => !element.hidden && element.getClientRects().length);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable.at(-1);
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+
+  const initGalleryInteraction = (target) => {
+    if (!target) return;
+    const pointers = new Map();
+    let startX = 0;
+    let startY = 0;
+    let startPanX = 0;
+    let startPanY = 0;
+    let pinchDistance = 0;
+    let pinchZoom = 1;
+    target.addEventListener("pointerdown", (event) => {
+      target.setPointerCapture?.(event.pointerId);
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      startX = event.clientX;
+      startY = event.clientY;
+      startPanX = state.galleryPanX;
+      startPanY = state.galleryPanY;
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        pinchDistance = Math.hypot(b.x - a.x, b.y - a.y);
+        pinchZoom = state.galleryZoom;
+      }
+    });
+    target.addEventListener("pointermove", (event) => {
+      if (!pointers.has(event.pointerId)) return;
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        const distance = Math.hypot(b.x - a.x, b.y - a.y);
+        if (pinchDistance) setGalleryZoom(pinchZoom * (distance / pinchDistance));
+        return;
+      }
+      if (state.galleryZoom > 1) {
+        state.galleryPanX = startPanX + event.clientX - startX;
+        state.galleryPanY = startPanY + event.clientY - startY;
+        applyGalleryTransform();
+      }
+    });
+    const finishPointer = (event) => {
+      const point = pointers.has(event.pointerId) ? { x: event.clientX, y: event.clientY } : null;
+      pointers.delete(event.pointerId);
+      if (!point || pointers.size || state.galleryZoom > 1) return;
+      const deltaX = point.x - startX;
+      const deltaY = point.y - startY;
+      if (Math.abs(deltaX) > 55 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+        showGallery(state.galleryIndex + (deltaX < 0 ? 1 : -1));
+      }
+    };
+    target.addEventListener("pointerup", finishPointer);
+    target.addEventListener("pointercancel", (event) => pointers.delete(event.pointerId));
+    target.addEventListener("dblclick", (event) => {
+      const rect = target.getBoundingClientRect();
+      setGalleryZoom(state.galleryZoom > 1 ? 1 : 2.5, event.clientX - rect.left - rect.width / 2, event.clientY - rect.top - rect.height / 2);
+    });
+    target.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const rect = target.getBoundingClientRect();
+      setGalleryZoom(state.galleryZoom + (event.deltaY < 0 ? 0.25 : -0.25), event.clientX - rect.left - rect.width / 2, event.clientY - rect.top - rect.height / 2);
+    }, { passive: false });
+  };
+  const syncDisclosure = (detail) => {
+    const summary = detail.querySelector("summary");
+    const isOpen = detail.open;
+    summary?.setAttribute("aria-expanded", String(isOpen));
+    summary?.querySelectorAll(".closed-label").forEach((label) => {
+      label.hidden = isOpen;
+      label.setAttribute("aria-hidden", String(isOpen));
+    });
+    summary?.querySelectorAll(".open-label").forEach((label) => {
+      label.hidden = !isOpen;
+      label.setAttribute("aria-hidden", String(!isOpen));
+    });
+  };
+  const bindDisclosure = (detail) => {
+    if (detail.dataset.disclosureBound === "true") return;
+    detail.dataset.disclosureBound = "true";
+    const summary = detail.querySelector("summary");
+    syncDisclosure(detail);
+    detail.addEventListener("toggle", () => syncDisclosure(detail));
+    summary?.addEventListener("keydown", (event) => {
+      if (!["Enter", " "].includes(event.key)) return;
+      event.preventDefault();
+      detail.open = !detail.open;
+      syncDisclosure(detail);
+    });
+  };
+
+  // Project filtering shows/hides the existing static cards by category --
+  // it never touches the rest of the page, never re-renders anything, and
+  // preserves scroll position, form input, and every unrelated DOM node.
+  const applyProjectFilter = (filterValue) => {
+    document.querySelectorAll(".project-grid-rich .project-card").forEach((card) => {
+      const matches = filterValue === "all" || card.dataset.projectCategory === filterValue;
+      card.hidden = !matches;
+    });
+  };
+
+  const bindHomeInteractions = () => {
+    document.querySelectorAll("details.stat, details.problem, details.audience, details.faq").forEach(bindDisclosure);
+    document.querySelectorAll("[data-accordion-group]").forEach((group) => {
+      group.querySelectorAll("details").forEach((detail) => {
+        detail.addEventListener("toggle", () => {
+          if (!detail.open) return;
+          group.querySelectorAll("details[open]").forEach((other) => {
+            if (other !== detail) other.open = false;
+          });
+        });
+      });
+    });
+    document.querySelectorAll("[data-situation-gallery]").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const detail = problemDetails[Number(btn.dataset.situationGallery)];
+        const galleryProject = detail ? projects[detail.projectIndex] : null;
+        if (!galleryProject) return;
+        openGallery(projectLightboxImages(galleryProject), 0, tx(galleryProject.title));
+      });
+    });
+    document.querySelectorAll("[data-project-filter]").forEach((btn) => {
+      if (btn.dataset.filterBound === "true") return;
+      btn.dataset.filterBound = "true";
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-project-filter]").forEach((other) => other.classList.remove("active"));
+        btn.classList.add("active");
+        const anchor = btn.closest(".filterbar") || btn;
+        const anchorTopBefore = anchor.getBoundingClientRect().top;
+        applyProjectFilter(btn.dataset.projectFilter);
+        const anchorTopAfter = anchor.getBoundingClientRect().top;
+        const shift = anchorTopAfter - anchorTopBefore;
+        if (shift !== 0) window.scrollBy({ top: shift, left: 0, behavior: "instant" });
+      });
+    });
+    document.querySelectorAll("[data-service]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const item = services[Number(btn.dataset.service)];
+        openGallery(item.photos, 0, tx(item.title));
+      });
+    });
+    document.querySelectorAll("[data-project]").forEach((btn) => {
+      btn.addEventListener("click", () => openProject(Number(btn.dataset.project)));
+    });
+    document.querySelectorAll("[data-project-gallery]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const project = projects[Number(btn.dataset.projectGallery)];
+        openGallery(projectLightboxImages(project), 0, tx(project.title));
+      });
+    });
+    document.querySelectorAll("[data-close]").forEach((btn) => {
+      btn.addEventListener("click", () => closeModal(btn.closest(".modal")));
+    });
+    document.querySelectorAll("[data-compare]").forEach(initCompare);
+    initCarousels(document);
+
+    document.addEventListener("keydown", (event) => {
+      const modal = activeModal();
+      const comparisonMode = modal?.id === "galleryModal" && modal.dataset.galleryMode === "comparison";
+      if (event.key === "Escape" && modal) {
+        event.preventDefault();
+        closeModal(modal);
+      } else if (event.key === "Tab" && modal) {
+        trapFocus(event, modal);
+      } else if (modal?.id === "galleryModal" && !comparisonMode && event.key === "ArrowLeft") {
+        showGallery(state.galleryIndex - 1);
+      } else if (modal?.id === "galleryModal" && !comparisonMode && event.key === "ArrowRight") {
+        showGallery(state.galleryIndex + 1);
+      } else if (modal?.id === "galleryModal" && !comparisonMode && ["+", "="].includes(event.key)) {
+        event.preventDefault();
+        changeGalleryZoom("in");
+      } else if (modal?.id === "galleryModal" && !comparisonMode && event.key === "-") {
+        event.preventDefault();
+        changeGalleryZoom("out");
+      } else if (modal?.id === "galleryModal" && !comparisonMode && event.key === "0") {
+        event.preventDefault();
+        changeGalleryZoom("reset");
+      }
+    });
+  };
+
+  const homepageHashTargets = new Set(["services", "clients", "projects", "media", "contact"]);
+  const scrollToInitialHashTarget = () => {
+    const id = decodeURIComponent(window.location.hash.replace(/^#/, ""));
+    if (!homepageHashTargets.has(id)) return;
+    const target = document.getElementById(id);
+    if (!target) return;
+    const headerHeight = Math.ceil(document.querySelector(".header")?.getBoundingClientRect().height || 76);
+    const targetTop = target.getBoundingClientRect().top + window.pageYOffset - headerHeight - 18;
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: "auto" });
+  };
+
+  const initHomePage = () => {
+    enhanceHeaderNavigation();
+    bindLanguageSelectorTriggers();
+    bindConversionActionTracking();
+    bindQuoteForms();
+    bindPhoneActions();
+    bindPaintReveal();
+    initStandaloneReveals();
+    bindHomeInteractions();
+    // Hash positioning happens once, against the final DOM, on initial
+    // navigation only -- it must not re-fire on project-filter clicks or
+    // any other later interaction (that was the old render()-driven bug).
+    if (window.location.hash) {
+      requestAnimationFrame(() => requestAnimationFrame(scrollToInitialHashTarget));
+    }
+    window.addEventListener("resize", () => {
+      syncHeaderNavigationState();
+    }, { passive: true });
   };
 
   if (document.readyState === "loading") {
-    document.addEventListener(
-      "DOMContentLoaded",
-      () => {
-        observeHome();
-        loadCoreScript();
-      },
-      { once: true }
-    );
+    document.addEventListener("DOMContentLoaded", initHomePage, { once: true });
   } else {
-    observeHome();
-    loadCoreScript();
+    initHomePage();
   }
 })();

@@ -237,75 +237,46 @@ assert.match(hungarianHome, /<button class="language-trust-badge" type="button" 
   assert.equal((html.match(/id="languageMenu"/g) || []).length, 1);
 });
 
-// Regression tests for the "WhatsApp form jumps instead of opening WhatsApp" bug.
+// Regression tests for the "WhatsApp form jumps instead of opening WhatsApp"
+// bug and the architecture that caused it.
 //
-// Root cause: the homepage (index.html / hu/index.html) is rendered twice —
-// once immediately by script.js against the static markup, then again,
-// asynchronously, by script-core.js, which replaces the entire document.body
-// via innerHTML once it finishes loading. Binding a live, interactive
-// WhatsApp quote form during the first (doomed) pass let a visitor's click or
-// typed input be silently destroyed or misdirected onto a different element
-// when script-core.js's replacement landed mid-interaction — surfacing as the
-// page "jumping" instead of opening WhatsApp. The fix gates quote-form
-// rendering/binding on script-core.js's own "render is stable" signal
-// (afterHomeRender), with a same-effect fallback if script-core.js fails to
-// load at all, so the form is only ever built once, against the final DOM.
-assert.match(
-  scriptSource,
-  /let homeCoreReady = false;/,
-  "script.js must track whether script-core.js's render has completed before it is safe to bind the quote form"
-);
-assert.match(
-  scriptSource,
-  /if \(homeCoreReady\) bindQuoteForms\(\);/,
-  "applyHomeEnhancements must not call bindQuoteForms() until homeCoreReady is true"
-);
-// The dangerous pre-fix pattern — applyHomeEnhancements calling
-// bindQuoteForms() unconditionally on its last line — must not reappear.
-// (initStandalonePage, the *other* function that calls bindQuoteForms()
-// unconditionally, is fine as-is: service pages never load script-core.js,
-// so there is no destructive body.innerHTML replacement race to guard
-// against there — only applyHomeEnhancements needs the gate.)
-const applyHomeEnhancementsBody = scriptSource.match(
-  /const applyHomeEnhancements = \(\) => \{([\s\S]*?)\n {2}\};/
-)?.[1];
-assert.ok(applyHomeEnhancementsBody, "could not locate applyHomeEnhancements body to inspect");
-assert.doesNotMatch(
-  applyHomeEnhancementsBody,
-  /^\s*bindQuoteForms\(\);\s*$/m,
-  "bindQuoteForms() must stay gated behind homeCoreReady inside applyHomeEnhancements, not called unconditionally"
-);
-assert.match(
-  scriptSource,
-  /window\.BPS_I18N\.afterHomeRender = \(\) => \{\s*\n\s*homeCoreReady = true;/,
-  "afterHomeRender (called by script-core.js once its render is stable) must flip homeCoreReady on"
-);
-assert.match(
-  scriptSource,
-  /script\.onerror = \(\) => \{[\s\S]*?homeCoreReady = true;[\s\S]*?applyHomeEnhancements\(\);\s*\n\s*\};/,
-  "if script-core.js fails to load, the static fallback form must still become usable"
-);
+// Root cause (fixed by removing the double-render architecture entirely):
+// the homepage used to be rendered twice — once immediately by script.js
+// against static markup, then again, asynchronously, by a dynamically
+// injected script-core.js, which replaced the entire document.body via
+// innerHTML once it finished loading. Binding a live, interactive WhatsApp
+// quote form during the first (doomed) pass let a visitor's click or typed
+// input be silently destroyed or misdirected when the replacement landed
+// mid-interaction. The homepage is now complete, final static HTML from the
+// first paint onward — there is no second render to race against, so the
+// form only ever needs to be bound once, exactly like every service page.
+assert.doesNotMatch(scriptSource, /document\.body\.innerHTML\s*=/, "no script may replace the entire page body — the homepage must stay static after load");
+assert.doesNotMatch(scriptSource, /homeCoreReady|afterHomeRender|loadCoreScript|script-core/, "the double-render workaround machinery must not reappear");
+assert.match(scriptSource, /const initHomePage = \(\) => \{/, "the homepage must have its own single, direct initialization function");
+const initHomePageBody = scriptSource.match(/const initHomePage = \(\) => \{([\s\S]*?)\n {2}\};/)?.[1];
+assert.ok(initHomePageBody, "could not locate initHomePage body to inspect");
+assert.match(initHomePageBody, /bindQuoteForms\(\);/, "initHomePage must bind the quote form directly, with no readiness gate needed");
+assert.doesNotMatch(fs.readFileSync("index.html", "utf8"), /<script[^>]*script-core/, "index.html must not load script-core.js");
+assert.doesNotMatch(fs.readFileSync("hu/index.html", "utf8"), /<script[^>]*script-core/, "hu/index.html must not load script-core.js");
+assert.equal(fs.existsSync("script-core.js"), false, "script-core.js must be deleted, not merely stop being referenced");
 
 // Regression tests for the "Hungarian pages contain German text" bug: two
-// content fields in script-core.js had German copy sitting in their `hu`
-// slot (audienceTitle, and the "Neglected yard or garden" situation card),
-// and two render functions read a stale `.en` property that no longer
-// existed after the EN->DE conversion (always rendering `undefined`/blank
-// on German pages). Pin the fixed values and the fixed property reads so
-// they cannot silently regress.
-const coreSource = fs.readFileSync("script-core.js", "utf8");
-assert.match(coreSource, /audienceTitle: \{ hu: "Kiknek hasznos\?", de: "Für wen ist das nützlich\?" \}/);
-assert.match(coreSource, /\["Elhanyagolt udvar vagy kert", "Vernachlässigter Hof oder Garten"/);
-// Render functions must read the current `.de` field, not the stale `.en`
-// key that stopped existing once the site converted from English to German.
-assert.match(coreSource, /state\.lang === "hu" \? item\.hu : item\.de/);
-assert.match(coreSource, /state\.lang === "hu" \? metric\.hu : metric\.de/);
+// content fields had German copy sitting in their `hu` slot (the audience
+// section heading, and the "Neglected yard or garden" situation card). Pin
+// the fixed, now-static values so they cannot silently regress.
+assert.match(fs.readFileSync("index.html", "utf8"), /Für wen ist das nützlich\?/);
+assert.match(fs.readFileSync("index.html", "utf8"), /Vernachlässigter Hof oder Garten/);
+assert.match(fs.readFileSync("hu/index.html", "utf8"), /Kiknek hasznos\?/);
+assert.match(fs.readFileSync("hu/index.html", "utf8"), /Elhanyagolt udvar vagy kert/);
 
-// Broader sweep: no `hu:`-labeled field in script-core.js should contain
+// Broader sweep: no `hu:`-labeled field in script.js's ported project/service
+// data (projects, services, problemDetails — the on-demand modal/gallery
+// content that still legitimately carries bilingual objects) should contain
 // obviously German prose (distinct German function words/nouns that never
 // legitimately appear in Hungarian text). This is the same heuristic used to
-// find the two bugs above, kept here so any future edit that reintroduces a
-// German string into a Hungarian slot fails the test suite.
+// find the bugs above, kept here so any future edit reintroduces a German
+// string into a Hungarian slot fails the test suite.
+const coreSource = scriptSource;
 const germanSignal = new RegExp(
   "\\b(" +
     [
@@ -448,14 +419,19 @@ assert.doesNotMatch(
   "the cleaning comparison slider must stay a plain, lightweight input-driven control"
 );
 
-// Cache-busting version string must be bumped together across script.js,
-// styles.css and script-core.js's dynamically-loaded query string, so a
-// browser that already cached the old assets picks up the fix.
+// Cache-busting is now a single source of truth: every HTML file carries the
+// literal placeholder "__ASSET_VERSION__" on styles.css/script.js links (and
+// on image src attributes), and only the deploy workflow substitutes it for
+// a real value, computed once from the actual shipped file content. There is
+// nothing left to hand-edit or forget to bump across 16 files.
 ["index.html", "hu/index.html", "garden-maintenance-sopron.html", "cleaning-services-sopron.html"].forEach((file) => {
   const html = fs.readFileSync(file, "utf8");
-  assert.match(html, /styles\.css\?v=card-row-fix-v1-2026-08-24-02/, `${file}: styles.css version must be bumped`);
-  assert.match(html, /script\.js\?v=card-row-fix-v1-2026-08-24-02/, `${file}: script.js version must be bumped`);
+  assert.match(html, /styles\.css\?v=__ASSET_VERSION__/, `${file}: styles.css must use the version placeholder`);
+  assert.match(html, /script\.js\?v=__ASSET_VERSION__/, `${file}: script.js must use the version placeholder`);
 });
+const pagesWorkflow = fs.readFileSync(".github/workflows/pages.yml", "utf8");
+assert.match(pagesWorkflow, /ASSET_VERSION="\$\(cat styles\.css styles-base\.css script\.js \| sha256sum/, "the deploy workflow must compute the asset version from actual file content, not a hand-written string");
+assert.match(pagesWorkflow, /sed -i "s\/__ASSET_VERSION__\/\$ASSET_VERSION\/g"/, "the deploy workflow must substitute the version placeholder across every copied file");
 
 // Regression tests for the "homepage DE/HU / Fotos / Sopron card row overflows
 // and its 'Mehr erfahren +' controls overlap the next card" bug.
@@ -476,9 +452,6 @@ assert.doesNotMatch(
   assert.doesNotMatch(statsBlock, /Mehr erfahren|Részletek|disclosure-icon|<details|<summary/, `${file}: the stats row must not contain a disclosure/"Mehr erfahren" control`);
   assert.equal((statsBlock.match(/class="stat"/g) || []).length, 3, `${file}: the stats row must render exactly 3 static cards`);
 });
-const coreStatCardsBody = coreSource.match(/const statCards = \(\) =>[\s\S]*?\.join\(""\);/)?.[0];
-assert.ok(coreStatCardsBody, "could not locate script-core.js's statCards() to inspect");
-assert.doesNotMatch(coreStatCardsBody, /details|summary|disclosureMarkup/, "script-core.js's dynamic re-render must not reintroduce the disclosure toggle for the stats row");
 // No negative margins anywhere in the .stat card rules (any breakpoint) —
 // negative margins were how the pre-fix layout tried to visually compensate
 // for the disclosure row and are explicitly disallowed in the rebuild.
@@ -515,5 +488,33 @@ assert.match(
     const html = fs.readFileSync(file, "utf8");
     assert.doesNotMatch(html, /href="#"/, `${file}: must not contain a dead href="#" link`);
   });
+
+// Regression tests for the homepage re-architecture: project filtering must
+// show/hide the existing static cards, never regenerate the page.
+assert.match(scriptSource, /const applyProjectFilter = \(filterValue\) => \{/, "project filtering must be a dedicated, non-destructive function");
+const applyProjectFilterBody = scriptSource.match(/const applyProjectFilter = \(filterValue\) => \{([\s\S]*?)\n {2}\};/)?.[1];
+assert.ok(applyProjectFilterBody, "could not locate applyProjectFilter body to inspect");
+assert.match(applyProjectFilterBody, /card\.hidden = !matches;/, "project filtering must toggle the native `hidden` attribute on existing cards");
+assert.doesNotMatch(applyProjectFilterBody, /innerHTML|render\(\)/, "project filtering must not regenerate any markup");
+const filterClickBody = scriptSource.match(/document\.querySelectorAll\("\[data-project-filter\]"\)\.forEach\(\(btn\) => \{([\s\S]*?)\n {4}\}\);/)?.[1];
+assert.ok(filterClickBody, "could not locate the project-filter click handler to inspect");
+assert.doesNotMatch(filterClickBody, /render\(\)|scrollIntoView|location\.hash/, "clicking a project filter must not re-render the page, force a scroll, or touch the URL hash");
+
+// Every project card in the static markup must carry its filter category,
+// and there must be exactly one per known category, in both languages.
+["index.html", "hu/index.html"].forEach((file) => {
+  const html = fs.readFileSync(file, "utf8");
+  const categories = [...html.matchAll(/data-project-category="([a-z]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(categories, ["painting", "drywall", "garden", "airbnb", "office", "handyman"], `${file}: project cards must carry their filter category, in order`);
+});
+
+// Hash-scroll positioning must happen once, on initial navigation only, and
+// must never be wired to fire again on a later, unrelated interaction (that
+// re-fire — driven by the old render() call on every project-filter click
+// and every language switch — was the "unexpected jump to an old #section"
+// bug).
+assert.match(scriptSource, /const scrollToInitialHashTarget = \(\) => \{/, "hash-scroll must be its own single-purpose, one-time function");
+assert.doesNotMatch(applyProjectFilterBody, /scrollToInitialHashTarget|scheduleHashScroll/, "project filtering must not trigger hash-scroll positioning");
+assert.doesNotMatch(scriptSource, /window\.addEventListener\("bps:languagechange"/, "the homepage must not listen for an in-place language-change re-render (real language switches navigate to the other URL instead)");
 
 console.log("Quote form tests passed.");

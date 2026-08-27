@@ -40,7 +40,6 @@ jobs:
             styles.css \
             styles-base.css \
             script.js \
-            script-core.js \
             robots.txt \
             sitemap.xml \
             _site/
@@ -50,11 +49,29 @@ jobs:
           fi
           cp -R assets _site/assets
           cp -R hu _site/hu
+
+          # Single source of truth for cache-busting: every HTML file carries
+          # the literal placeholder "__ASSET_VERSION__" (on styles.css/script.js
+          # links and on asset image src attributes) instead of a hand-maintained
+          # version string. Here -- and only here -- it is substituted for a
+          # hash of the actual shipped script/style content, so there is nothing
+          # left to forget to bump by hand and no way for it to drift out of
+          # sync across 16 files.
+          ASSET_VERSION="$(cat styles.css styles-base.css script.js | sha256sum | cut -c1-16)"
+          echo "Computed asset version: $ASSET_VERSION"
+          grep -rl "__ASSET_VERSION__" _site | while read -r file; do
+            sed -i "s/__ASSET_VERSION__/$ASSET_VERSION/g" "$file"
+          done
+          if grep -rq "__ASSET_VERSION__" _site; then
+            echo "::error::Unsubstituted __ASSET_VERSION__ placeholder remained in _site"
+            exit 1
+          fi
+
           test "$(head -n 1 _site/index.html)" = "<!DOCTYPE html>"
-          grep -F '<link rel="stylesheet" href="styles.css?v=card-row-fix-v1-2026-08-24-02">' _site/index.html
-          grep -F '<script src="script.js?v=card-row-fix-v1-2026-08-24-02" defer></script>' _site/index.html
-          grep -F '<link rel="stylesheet" href="../styles.css?v=card-row-fix-v1-2026-08-24-02">' _site/hu/index.html
-          grep -F '<script src="../script.js?v=card-row-fix-v1-2026-08-24-02" defer></script>' _site/hu/index.html
+          grep -F "<link rel=\"stylesheet\" href=\"styles.css?v=$ASSET_VERSION\">" _site/index.html
+          grep -F "<script src=\"script.js?v=$ASSET_VERSION\" defer></script>" _site/index.html
+          grep -F "<link rel=\"stylesheet\" href=\"../styles.css?v=$ASSET_VERSION\">" _site/hu/index.html
+          grep -F "<script src=\"../script.js?v=$ASSET_VERSION\" defer></script>" _site/hu/index.html
           test -s _site/property-maintenance-sopron.html
           test -s _site/handyman-services-sopron.html
           test -s _site/painting-wall-repairs-sopron.html
@@ -73,7 +90,6 @@ jobs:
           test -s _site/styles.css
           test -s _site/styles-base.css
           test -s _site/script.js
-          test -s _site/script-core.js
           test -d _site/assets
 
       - name: Configure Pages
