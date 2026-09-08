@@ -833,6 +833,22 @@ details[open] .disclosure-link {
   opacity: 0.72;
 }
 
+.quote-submit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.quote-submit-actions .btn {
+  flex: 1 1 200px;
+  min-height: 48px;
+}
+
+.quote-submit-email:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
 .quote-status:not(:empty) {
   padding-top: 2px;
   color: var(--green2);
