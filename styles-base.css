@@ -1736,6 +1736,54 @@ details[open] .disclosure-link span {
   font-weight: 700;
 }
 
+.copy-email {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--green2);
+  font-weight: 700;
+}
+
+.copy-email-address {
+  word-break: break-all;
+}
+
+.copy-email-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(45, 55, 47, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.9);
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.copy-email-btn:hover {
+  border-color: rgba(155, 93, 52, 0.38);
+  background: #fff;
+}
+
+.copy-email-btn:active {
+  transform: scale(0.94);
+}
+
+.contact-email {
+  margin-bottom: 8px;
+  font-size: clamp(18px, 1.6vw, 22px);
+}
+
+.quote-submit-actions + .copy-email {
+  margin-top: -6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .contact-card small {
   margin-top: 6px;
   color: var(--muted);
@@ -2541,6 +2589,10 @@ details[open] .disclosure-link span {
 
   .contact-number {
     font-size: 27px;
+  }
+
+  .contact-email {
+    font-size: 17px;
   }
 
   .compare {

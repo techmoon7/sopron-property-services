@@ -677,6 +677,27 @@
       uk: `Телефон: ${phone}`,
       "zh-CN": `电话：${phone}`,
     },
+    emailCopied: {
+      hu: "Email cím másolva.",
+      en: "Email address copied.",
+      de: "E-Mail-Adresse kopiert.",
+      uk: "Адресу електронної пошти скопійовано.",
+      "zh-CN": "电子邮件地址已复制。",
+    },
+    emailFallback: {
+      hu: `Email cím: ${contactEmail}`,
+      en: `Email: ${contactEmail}`,
+      de: `E-Mail: ${contactEmail}`,
+      uk: `Електронна пошта: ${contactEmail}`,
+      "zh-CN": `电子邮件：${contactEmail}`,
+    },
+    emailCopyLabel: {
+      hu: "Email cím másolása",
+      en: "Copy email address",
+      de: "E-Mail-Adresse kopieren",
+      uk: "Копіювати адресу електронної пошти",
+      "zh-CN": "复制电子邮件地址",
+    },
     detailsLabel: {
       hu: "Részletek +",
       en: "Details +",
@@ -7438,6 +7459,7 @@
           <button class="btn primary quote-submit" type="submit" data-quote-submit>${quoteEscape(text.submit)}</button>
           <button class="btn quote-submit-email" type="button" data-quote-submit-email>${quoteEscape(text.submitEmail)}</button>
         </div>
+        ${copyEmailWidget(lang)}
         <p class="quote-status" data-quote-status role="status" aria-live="polite" aria-atomic="true"></p>
       </form>
     `;
@@ -7533,6 +7555,71 @@
     });
   };
 
+  const copyEmailUsingSelection = () => {
+    let input;
+    try {
+      input = document.createElement("textarea");
+      input.value = contactEmail;
+      input.setAttribute("readonly", "");
+      input.style.position = "fixed";
+      input.style.left = "-9999px";
+      input.style.top = "0";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.focus({ preventScroll: true });
+      input.select();
+      input.setSelectionRange(0, input.value.length);
+      return document.execCommand("copy");
+    } catch {
+      return false;
+    } finally {
+      input?.remove();
+    }
+  };
+
+  const copyEmailWithClipboard = async () => {
+    try {
+      if (!navigator.clipboard?.writeText) return false;
+      await navigator.clipboard.writeText(contactEmail);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const copyEmailToClipboard = async (lang = currentLang()) => {
+    const success = t("emailCopied", lang);
+    const fallback = t("emailFallback", lang);
+    let copied = false;
+
+    copied = copyEmailUsingSelection();
+    if (!copied) copied = await copyEmailWithClipboard();
+
+    showToast(copied ? success : fallback);
+    return copied;
+  };
+
+  const bindEmailCopyActions = () => {
+    document.querySelectorAll("[data-email-copy-action]").forEach((button) => {
+      if (button.dataset.emailCopyBound === "true") return;
+      button.dataset.emailCopyBound = "true";
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        copyEmailToClipboard(currentLang());
+      });
+    });
+  };
+
+  const copyEmailIcon =
+    '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"></rect><path d="M4 16V5a1 1 0 0 1 1-1h9" fill="none" stroke="currentColor" stroke-width="2"></path></svg>';
+
+  const copyEmailWidget = (lang = currentLang()) => `
+    <span class="copy-email">
+      <span class="copy-email-address">${quoteEscape(contactEmail)}</span>
+      <button type="button" class="copy-email-btn" data-email-copy-action aria-label="${quoteEscape(t("emailCopyLabel", lang))}">${copyEmailIcon}</button>
+    </span>
+  `;
+
   const syncTextNodes = (lang) => {
     applyPageLanguage(lang);
   };
@@ -7571,6 +7658,7 @@
     bindConversionActionTracking();
     bindQuoteForms();
     bindPhoneActions();
+    bindEmailCopyActions();
     if (document.body?.dataset.page === "garden-maintenance") {
       bindGardenImageGallery();
     } else if (document.body?.dataset.page === "cleaning-services") {
@@ -9062,6 +9150,7 @@
     bindConversionActionTracking();
     bindQuoteForms();
     bindPhoneActions();
+    bindEmailCopyActions();
     bindPaintReveal();
     initStandaloneReveals();
     bindHomeInteractions();
