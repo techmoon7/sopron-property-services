@@ -9146,6 +9146,7 @@
   };
 
   const initHomePage = () => {
+    applyPageLanguage();
     enhanceHeaderNavigation();
     bindLanguageSelectorTriggers();
     bindConversionActionTracking();
