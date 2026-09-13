@@ -15,6 +15,7 @@ const routes = {
     de: "/property-management-for-foreign-owners-sopron.html",
     hu: "/hu/ingatlankezeles-kulfoldi-tulajdonosoknak-sopron.html",
   },
+  impresszum: { de: "/impresszum.html", hu: "/hu/impresszum.html" },
 };
 
 const pages = Object.entries(routes).flatMap(([key, value]) =>
@@ -105,7 +106,7 @@ for (const page of pages) {
   if (h1s[0] && !stripTags(h1s[0])) fail(`${page.file}: H1 is empty`);
 
   const jsonScripts = [...head.matchAll(/<script\s+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)].map((match) => match[1]);
-  if (!jsonScripts.length) fail(`${page.file}: missing JSON-LD`);
+  if (!jsonScripts.length && page.key !== "impresszum") fail(`${page.file}: missing JSON-LD`);
   const jsonTypes = [];
   for (const jsonText of jsonScripts) {
     try {
@@ -119,6 +120,8 @@ for (const page of pages) {
   if (page.key === "home") {
     if (!jsonTypes.includes("LocalBusiness")) fail(`${page.file}: homepage missing LocalBusiness schema`);
     if (!jsonTypes.includes("WebSite")) fail(`${page.file}: homepage missing WebSite schema`);
+  } else if (page.key === "impresszum") {
+    // Legal notice page: no service/business schema is expected here.
   } else {
     if (!jsonTypes.includes("Service")) fail(`${page.file}: service page missing Service schema`);
     if (!jsonTypes.includes("BreadcrumbList")) fail(`${page.file}: service page missing BreadcrumbList schema`);
